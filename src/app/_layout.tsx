@@ -1,0 +1,58 @@
+import React, { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import Toast from 'react-native-toast-message';
+
+import { useAuth } from '@/hooks/use-auth';
+import { useAcadexFonts } from '@/utils/fonts';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { BG } from '@/constants/colors';
+
+SplashScreen.preventAutoHideAsync();
+
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useAcadexFonts();
+  const { user, profile, loading: authLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    if (authLoading || !fontsLoaded) return;
+
+    const segs = segments as string[];
+    const inAuth = segs[0] === '(auth)';
+
+    if (!user) {
+      if (!inAuth) router.replace('/(auth)/');
+    } else if (!profile) {
+      if (!(inAuth && segs[1] === 'complete-profile')) {
+        router.replace('/(auth)/complete-profile');
+      }
+    } else {
+      if (inAuth) router.replace('/(main)/');
+    }
+  }, [user, profile, authLoading, fontsLoaded]);
+
+  if (!fontsLoaded && !fontError) {
+    return <LoadingSpinner fullscreen />;
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: BG.bg0 }}>
+      <BottomSheetModalProvider>
+        <StatusBar style="light" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: BG.bg0 } }} />
+        <Toast />
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
+  );
+}
