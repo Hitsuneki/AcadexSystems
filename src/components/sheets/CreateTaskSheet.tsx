@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { AcadexBottomSheet } from '../AcadexBottomSheet';
 import { FormInput } from '../FormInput';
 import { Avatar } from '../Avatar';

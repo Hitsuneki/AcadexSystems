@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 
 import { FormInput } from '@/components/FormInput';
 import { BG, TEXT, ACCENT } from '@/constants/colors';

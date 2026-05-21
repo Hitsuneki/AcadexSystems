@@ -3,7 +3,7 @@ import { View, Text, Pressable, ActivityIndicator, StyleSheet, KeyboardAvoidingV
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { FormInput } from '@/components/FormInput';
@@ -29,7 +29,7 @@ export default function EditProfileScreen() {
 
   const pickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images',
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,

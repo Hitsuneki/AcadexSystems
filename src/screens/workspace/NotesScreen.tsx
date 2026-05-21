@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, FlatList, Pressable, StyleSheet, Alert, TextInput, Modal, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { NoteCard } from '@/components/NoteCard';
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute', bottom: 24, right: 20, width: 52, height: 52, borderRadius: 26,
     backgroundColor: ACCENT.blue, alignItems: 'center', justifyContent: 'center',
-    shadowColor: ACCENT.blue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
+    boxShadow: '0 4px 8px rgba(37, 99, 235, 0.4)',
   },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   prompt: { backgroundColor: BG.bg2, borderRadius: 12, borderWidth: 0.5, borderColor: BORDER.default, padding: 20, width: '100%', maxWidth: 320, gap: 14 },

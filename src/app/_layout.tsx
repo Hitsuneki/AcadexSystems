@@ -4,8 +4,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import Toast from 'react-native-toast-message';
-
+import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
+import { AcadexToastHost } from '@/components/AcadexToast';
 import { useAuth } from '@/hooks/use-auth';
 import { useAcadexFonts } from '@/utils/fonts';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -48,10 +48,11 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: BG.bg0 }}>
+      <ReducedMotionConfig mode={ReduceMotion.Never} />
       <BottomSheetModalProvider>
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: BG.bg0 } }} />
-        <Toast />
+        <AcadexToastHost />
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );

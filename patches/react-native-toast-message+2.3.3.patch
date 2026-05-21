@@ -1,0 +1,17 @@
+diff --git a/node_modules/react-native-toast-message/lib/src/components/AnimatedContainer.js b/node_modules/react-native-toast-message/lib/src/components/AnimatedContainer.js
+index f9f2a10..e6acefd 100644
+--- a/node_modules/react-native-toast-message/lib/src/components/AnimatedContainer.js
++++ b/node_modules/react-native-toast-message/lib/src/components/AnimatedContainer.js
+@@ -86,10 +86,8 @@ export function AnimatedContainer({ children, isVisible, position, topOffset, bo
+         const newAnimationValue = isVisible ? 1 : 0;
+         animate(newAnimationValue);
+     }, [animate, isVisible]);
+-    return (<Animated.View testID={getTestId('AnimatedContainer')} onLayout={computeViewDimensions} style={[styles.base, styles[position], animationStyles]} 
+-    // This container View is never the target of touch events but its subviews can be.
+-    // By doing this, tapping buttons behind the Toast is allowed
+-    pointerEvents='box-none' {...panResponder.panHandlers}>
++    return (<Animated.View testID={getTestId('AnimatedContainer')} onLayout={computeViewDimensions} style={[styles.base, styles[position], animationStyles, { pointerEvents: 'box-none' }]} 
++    {...panResponder.panHandlers}>
+       {children}
+     </Animated.View>);
+ }

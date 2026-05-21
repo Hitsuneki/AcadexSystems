@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { AcadexBottomSheet } from '../AcadexBottomSheet';
 import { FormInput } from '../FormInput';
 import { ACCENT } from '@/constants/colors';

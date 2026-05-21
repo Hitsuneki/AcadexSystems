@@ -3,7 +3,7 @@ import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { MemberRow } from '@/components/MemberRow';

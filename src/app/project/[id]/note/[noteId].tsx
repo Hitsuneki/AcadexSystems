@@ -3,7 +3,7 @@ import { View, Text, Pressable, TextInput, StyleSheet, KeyboardAvoidingView, Pla
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Markdown from 'react-native-markdown-display';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { LoadingSpinner } from '@/components/LoadingSpinner';

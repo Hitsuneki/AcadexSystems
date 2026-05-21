@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, FlatList, Pressable, StyleSheet, Linking, Alert } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystemAPI from 'expo-file-system';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { FileCard } from '@/components/FileCard';
@@ -97,11 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT.blue,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: ACCENT.blue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    boxShadow: '0 4px 8px rgba(37, 99, 235, 0.4)',
   },
   fabDisabled: { opacity: 0.6 },
 });

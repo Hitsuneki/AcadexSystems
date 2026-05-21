@@ -1,11 +1,22 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import BottomSheetLib, {
   BottomSheetView,
   BottomSheetScrollView,
-  BottomSheetBackdrop,
+  useBottomSheet,
 } from '@gorhom/bottom-sheet';
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import type {
+  BottomSheetBackdropProps,
+  BottomSheetBackgroundProps,
+} from '@gorhom/bottom-sheet';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { BG, BORDER, TEXT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
@@ -16,6 +27,87 @@ interface AcadexBottomSheetProps {
   children: React.ReactNode;
   snapPoints?: (string | number)[];
   scrollable?: boolean;
+}
+
+/** Web-safe backdrop: pointerEvents lives in style, not on the View prop. */
+function AcadexBackdrop({
+  animatedIndex,
+  style,
+  disappearsOnIndex = -1,
+  appearsOnIndex = 0,
+  opacity = 0.5,
+  pressBehavior = 'close',
+  onPress,
+}: BottomSheetBackdropProps) {
+  const { close } = useBottomSheet();
+  const [pointerEvents, setPointerEvents] = useState<'none' | 'auto'>('none');
+
+  const handleOnPress = useCallback(() => {
+    onPress?.();
+    if (pressBehavior === 'close') {
+      close();
+    }
+  }, [close, onPress, pressBehavior]);
+
+  const handleContainerTouchability = useCallback((disabled: boolean) => {
+    setPointerEvents(disabled ? 'none' : 'auto');
+  }, []);
+
+  useAnimatedReaction(
+    () => animatedIndex.value <= disappearsOnIndex,
+    (disabled, prev) => {
+      if (disabled === prev) return;
+      runOnJS(handleContainerTouchability)(disabled);
+    },
+    [disappearsOnIndex],
+  );
+
+  const containerAnimatedStyle = useAnimatedStyle(
+    () => ({
+      opacity: interpolate(
+        animatedIndex.value,
+        [-1, disappearsOnIndex, appearsOnIndex],
+        [0, 0, opacity],
+        Extrapolation.CLAMP,
+      ),
+    }),
+    [animatedIndex, appearsOnIndex, disappearsOnIndex, opacity],
+  );
+
+  const containerStyle = useMemo(
+    () => [
+      StyleSheet.absoluteFill,
+      styles.backdrop,
+      style,
+      { pointerEvents },
+      containerAnimatedStyle,
+    ],
+    [style, containerAnimatedStyle, pointerEvents],
+  );
+
+  const tapHandler = useMemo(
+    () => Gesture.Tap().onEnd(() => runOnJS(handleOnPress)()),
+    [handleOnPress],
+  );
+
+  const content = <Animated.View style={containerStyle} />;
+
+  return pressBehavior !== 'none' ? (
+    <GestureDetector gesture={tapHandler}>{content}</GestureDetector>
+  ) : (
+    content
+  );
+}
+
+function AcadexSheetBackground({ style }: BottomSheetBackgroundProps) {
+  return (
+    <View
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel="Bottom Sheet"
+      style={[styles.sheetBackground, style]}
+    />
+  );
 }
 
 export function AcadexBottomSheet({
@@ -38,7 +130,13 @@ export function AcadexBottomSheet({
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" onPress={onClose} />
+      <AcadexBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+        onPress={onClose}
+      />
     ),
     [onClose],
   );
@@ -53,6 +151,7 @@ export function AcadexBottomSheet({
       enablePanDownToClose
       onClose={onClose}
       backdropComponent={renderBackdrop}
+      backgroundComponent={AcadexSheetBackground}
       backgroundStyle={styles.background}
       handleIndicatorStyle={styles.handle}>
       <ContentWrapper contentContainerStyle={scrollable ? styles.scrollContent : undefined}>
@@ -71,6 +170,12 @@ export function AcadexBottomSheet({
 }
 
 const styles = StyleSheet.create({
+  backdrop: { backgroundColor: 'rgba(0,0,0,0.55)' },
+  sheetBackground: {
+    backgroundColor: BG.bg1,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
   background: {
     backgroundColor: BG.bg1,
     borderTopWidth: 0.5,

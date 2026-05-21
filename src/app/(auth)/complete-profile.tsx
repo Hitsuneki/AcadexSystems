@@ -3,7 +3,7 @@ import { View, Text, Pressable, ActivityIndicator, StyleSheet, KeyboardAvoidingV
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { FormInput } from '@/components/FormInput';
@@ -18,7 +18,7 @@ const ROLES: RoleLabel[] = ['Student', 'Teacher', 'Researcher', 'Professional'];
 
 export default function CompleteProfileScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, setProfile } = useAuthStore();
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [course, setCourse] = useState('');
   const [bio, setBio] = useState('');
@@ -28,7 +28,7 @@ export default function CompleteProfileScreen() {
 
   const pickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images',
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -50,8 +50,19 @@ export default function CompleteProfileScreen() {
       }
       if (user) {
         await updateUserProfile(user.uid, { course: course.trim(), roleLabel, bio: bio.trim() || undefined, avatarUri: finalAvatarUri });
+        // Update auth store so root layout guard fires and redirects to (main)
+        setProfile({
+          id: user.uid,
+          fullName: '',
+          email: user.email,
+          course: course.trim(),
+          roleLabel,
+          bio: bio.trim() || undefined,
+          avatarUri: finalAvatarUri,
+          projectIds: [],
+          completedTasksCount: 0,
+        });
       }
-      // Root layout redirects to (main) once profile exists
     } catch (err: any) {
       Toast.show({ type: 'error', text1: 'Failed to save profile', text2: err?.message });
     } finally {

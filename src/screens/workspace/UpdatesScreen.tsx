@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, FlatList, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AnnouncementCard } from '@/components/AnnouncementCard';

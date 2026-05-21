@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndic
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
-import Toast from 'react-native-toast-message';
+import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '@/components/Avatar';
