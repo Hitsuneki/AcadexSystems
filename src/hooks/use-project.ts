@@ -9,21 +9,25 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useUserProjects } from './use-user-projects';
 
 export function useProject(projectId: string | undefined) {
-  const { currentProject, setCurrentProject } = useProjectStore();
+  const { currentProject, setCurrentProject, projects: storeProjects } = useProjectStore();
   const { user } = useAuthStore();
-  const { projects } = useUserProjects(user?.uid);
+  const { projects: fetchedProjects } = useUserProjects(user?.uid);
 
   useEffect(() => {
     if (!projectId) return;
     if (currentProject?.id === projectId) return;
 
-    // Try to find in already-loaded projects
-    const found = projects.find((p) => p.id === projectId);
+    // Search store projects first (covers locally created/joined projects),
+    // then fall back to backend-fetched projects
+    const found =
+      storeProjects.find((p) => p.id === projectId) ??
+      fetchedProjects.find((p) => p.id === projectId);
+
     if (found) {
       setCurrentProject(found);
     }
     // TODO: if not found, fetch from backend using getProject(projectId)
-  }, [projectId, projects, currentProject]);
+  }, [projectId, storeProjects, fetchedProjects, currentProject]);
 
   return { project: currentProject?.id === projectId ? currentProject : null };
 }

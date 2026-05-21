@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { CreateProjectSheet } from '@/components/sheets/CreateProjectSheet';
 import { JoinProjectSheet } from '@/components/sheets/JoinProjectSheet';
 import { useAuthStore } from '@/stores/auth.store';
+import { useProjectStore } from '@/stores/project.store';
 import { useUserProjects } from '@/hooks/use-user-projects';
 import { BG, TEXT, ACCENT, BORDER } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
@@ -18,15 +19,19 @@ import type { Project } from '@/types';
 export default function HomeScreen() {
   const router = useRouter();
   const { user, profile } = useAuthStore();
-  const { projects, loading } = useUserProjects(user?.uid);
-  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const { addProject, projects: storeProjects } = useProjectStore();
+  const { projects: fetchedProjects, loading } = useUserProjects(user?.uid);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
 
-  const displayProjects = allProjects.length > 0 ? allProjects : projects;
+  // Merge store projects (created/joined this session) with backend-fetched projects
+  const displayProjects = [
+    ...storeProjects,
+    ...fetchedProjects.filter((p) => !storeProjects.some((s) => s.id === p.id)),
+  ];
 
-  const handleProjectCreated = (p: Project) => setAllProjects((prev) => [p, ...prev, ...projects]);
-  const handleProjectJoined = (p: Project) => setAllProjects((prev) => [p, ...prev, ...projects]);
+  const handleProjectCreated = (p: Project) => addProject(p);
+  const handleProjectJoined = (p: Project) => addProject(p);
 
   if (loading) return <LoadingSpinner fullscreen />;
 
