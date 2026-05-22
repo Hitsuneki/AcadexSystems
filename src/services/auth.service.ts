@@ -112,10 +112,23 @@ export async function updateUserProfile(
   data: Partial<CreateProfilePayload & UserProfile>,
 ): Promise<void> {
   try {
-    const payload: Record<string, unknown> = { ...data, updatedAt: serverTimestamp() };
-    if (data.avatarUri && !data.avatarUrl) payload.avatarUrl = data.avatarUri;
-    delete payload.id;
-    delete payload.uid;
+    const payload: Record<string, unknown> = { updatedAt: serverTimestamp() };
+
+    if (data.fullName !== undefined) payload.fullName = data.fullName;
+    if (data.email !== undefined) payload.email = data.email;
+    if (data.course !== undefined) payload.course = data.course;
+    if (data.bio !== undefined) payload.bio = data.bio;
+    if (data.roleLabel !== undefined) payload.roleLabel = data.roleLabel;
+    if (data.projectIds !== undefined) payload.projectIds = data.projectIds;
+    if (data.completedTasksCount !== undefined) {
+      payload.completedTasksCount = data.completedTasksCount;
+    }
+
+    const avatarUrl = data.avatarUrl ?? data.avatarUri;
+    if (avatarUrl && !avatarUrl.startsWith('file://') && !avatarUrl.startsWith('content://')) {
+      payload.avatarUrl = avatarUrl;
+    }
+
     await updateDoc(doc(db, 'users', userId), payload);
   } catch (error: any) {
     throw new Error(`Failed to update user profile: ${error.message}`);
@@ -128,11 +141,31 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     if (!snapshot.exists()) return null;
     return mapUserProfile(snapshot.id, snapshot.data());
   } catch (error: any) {
+    if (error?.code === 'permission-denied') {
+      return null;
+    }
     throw new Error(`Failed to get user profile: ${error.message}`);
   }
 }
 
-export async function uploadAvatar(uid: string, localUri: string, mimeType?: string): Promise<string> {
+/** Create or update the signed-in user's Firestore profile document. */
+export async function saveUserProfile(
+  userId: string,
+  data: CreateProfilePayload & Partial<UserProfile>,
+): Promise<void> {
+  const existing = await getUserProfile(userId);
+  if (existing) {
+    await updateUserProfile(userId, data);
+  } else {
+    await createUserProfile(userId, data);
+  }
+}
+
+export async function uploadAvatar(
+  uid: string,
+  localUri: string,
+  mimeType = 'image/jpeg',
+): Promise<string> {
   return uploadAvatarToStorage(uid, localUri, mimeType);
 }
 

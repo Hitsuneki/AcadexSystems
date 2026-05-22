@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAcadexFonts } from '@/utils/fonts';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { BG } from '@/constants/colors';
+import { isProfileComplete } from '@/utils/profile';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,7 +34,7 @@ export default function RootLayout() {
 
     if (!user) {
       if (!inAuth) router.replace('/(auth)' as never);
-    } else if (!profile) {
+    } else if (!isProfileComplete(profile)) {
       if (!(inAuth && segs[1] === 'complete-profile')) {
         router.replace('/(auth)/complete-profile');
       }

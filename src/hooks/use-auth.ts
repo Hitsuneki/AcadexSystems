@@ -17,8 +17,12 @@ export function useAuth() {
         }
 
         setUser({ uid: firebaseUser.uid, email: firebaseUser.email ?? '' });
-        const userProfile = await getUserProfile(firebaseUser.uid);
-        setProfile(userProfile);
+        try {
+          const userProfile = await getUserProfile(firebaseUser.uid);
+          setProfile(userProfile);
+        } catch {
+          setProfile(null);
+        }
       } finally {
         setLoading(false);
       }

@@ -7,17 +7,10 @@ import {
   PROJECT_FILES_BUCKET,
 } from '@/config/supabase';
 import type { ProjectFile } from '@/types';
+import { readUriAsArrayBuffer } from '@/utils/fileBytes';
 import { inferFileType } from './mappers';
 
 export type StorageBucket = typeof AVATARS_BUCKET | typeof PROJECT_FILES_BUCKET;
-
-async function uriToArrayBuffer(fileUri: string): Promise<ArrayBuffer> {
-  const response = await fetch(fileUri);
-  if (!response.ok) {
-    throw new Error(`Failed to read file: ${response.statusText}`);
-  }
-  return response.arrayBuffer();
-}
 
 function getPublicUrlFromPath(bucket: StorageBucket, storagePath: string): string {
   const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
@@ -27,13 +20,21 @@ function getPublicUrlFromPath(bucket: StorageBucket, storagePath: string): strin
   return data.publicUrl;
 }
 
+function avatarExtension(mimeType: string): string {
+  if (mimeType.includes('png')) return 'png';
+  if (mimeType.includes('webp')) return 'webp';
+  if (mimeType.includes('gif')) return 'gif';
+  return 'jpg';
+}
+
 export async function uploadAvatar(
   userId: string,
   fileUri: string,
   mimeType = 'image/jpeg',
 ): Promise<string> {
-  const storagePath = `${userId}/${Date.now()}-avatar`;
-  const body = await uriToArrayBuffer(fileUri);
+  const ext = avatarExtension(mimeType);
+  const storagePath = `${userId}/${Date.now()}-avatar.${ext}`;
+  const body = await readUriAsArrayBuffer(fileUri);
 
   const { error } = await supabase.storage.from(AVATARS_BUCKET).upload(storagePath, body, {
     contentType: mimeType,
@@ -41,7 +42,9 @@ export async function uploadAvatar(
   });
 
   if (error) {
-    throw new Error(`Avatar upload failed: ${error.message}`);
+    throw new Error(
+      `Avatar upload failed: ${error.message}. Ensure the "${AVATARS_BUCKET}" bucket exists and allows uploads.`,
+    );
   }
 
   return getPublicUrlFromPath(AVATARS_BUCKET, storagePath);
@@ -56,7 +59,7 @@ export async function uploadProjectFile(
 ): Promise<{ publicUrl: string; storagePath: string }> {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const storagePath = `${projectId}/${userId}-${Date.now()}-${safeName}`;
-  const body = await uriToArrayBuffer(fileUri);
+  const body = await readUriAsArrayBuffer(fileUri);
 
   const { error } = await supabase.storage.from(PROJECT_FILES_BUCKET).upload(storagePath, body, {
     contentType: mimeType,

@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { BG, TEXT } from "@/constants/colors";
 import { FontFamily, FontSize } from "@/constants/typography";
 import { useAuth } from "@/hooks/use-auth";
+import { isProfileComplete } from "@/utils/profile";
 
 export default function SplashScreen() {
   const { user, profile, loading } = useAuth();
@@ -15,9 +16,9 @@ export default function SplashScreen() {
 
   useEffect(() => {
     if (loading) return;
-    if (user && profile) {
+    if (user && isProfileComplete(profile)) {
       router.replace("/(main)");
-    } else if (user && !profile) {
+    } else if (user) {
       router.replace("/(auth)/complete-profile");
     }
     // else: stay here, user navigates to login

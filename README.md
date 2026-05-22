@@ -2,6 +2,10 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Backend setup (Firebase + Supabase)
+
+If you see **Missing or insufficient permissions** or avatar **RLS** errors, follow **[docs/BACKEND_SETUP.md](docs/BACKEND_SETUP.md)** (Firestore rules + Supabase Storage SQL).
+
 ## Get started
 
 1. Install dependencies

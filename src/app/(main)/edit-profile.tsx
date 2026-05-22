@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
+import { CoursePicker } from '@/components/CoursePicker';
 import { FormInput } from '@/components/FormInput';
 import { BG, TEXT, ACCENT, BORDER } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { validateRequired } from '@/utils/validation';
-import { updateUserProfile, uploadAvatar } from '@/services/auth.service';
+import { getUserProfile, updateUserProfile, uploadAvatar } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/auth.store';
 import type { RoleLabel } from '@/types';
+import { pickProfileImage } from '@/utils/pickImage';
 
 const ROLES: RoleLabel[] = ['Student', 'Teacher', 'Researcher', 'Professional'];
 
@@ -20,6 +21,8 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { user, profile, setProfile } = useAuthStore();
   const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatarUri ?? null);
+  const [avatarMime, setAvatarMime] = useState('image/jpeg');
+  const [pickingImage, setPickingImage] = useState(false);
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
   const [course, setCourse] = useState(profile?.course ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -28,13 +31,18 @@ export default function EditProfileScreen() {
   const [errors, setErrors] = useState<{ fullName?: string; course?: string }>({});
 
   const pickAvatar = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) setAvatarUri(result.assets[0].uri);
+    setPickingImage(true);
+    try {
+      const picked = await pickProfileImage();
+      if (picked) {
+        setAvatarUri(picked.uri);
+        setAvatarMime(picked.mimeType);
+      }
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Could not open photos', text2: err?.message });
+    } finally {
+      setPickingImage(false);
+    }
   };
 
   const handleSave = async () => {
@@ -44,17 +52,35 @@ export default function EditProfileScreen() {
     setErrors({});
     setLoading(true);
     try {
-      let finalUri = avatarUri ?? undefined;
-      if (avatarUri && avatarUri !== profile?.avatarUri && user) {
-        finalUri = await uploadAvatar(user.uid, avatarUri);
+      if (!user) throw new Error('Not signed in');
+
+      let avatarUrl: string | undefined;
+      const isNewLocalImage =
+        avatarUri &&
+        !avatarUri.startsWith('http') &&
+        avatarUri !== profile?.avatarUri;
+
+      if (isNewLocalImage) {
+        avatarUrl = await uploadAvatar(user.uid, avatarUri, avatarMime);
+      } else if (avatarUri) {
+        avatarUrl = avatarUri;
       }
-      if (user) {
-        await updateUserProfile(user.uid, { fullName: fullName.trim(), course: course.trim(), bio: bio.trim() || undefined, roleLabel, avatarUri: finalUri });
-      }
+
+      await updateUserProfile(user.uid, {
+        fullName: fullName.trim(),
+        course: course.trim(),
+        bio: bio.trim() || undefined,
+        roleLabel,
+        avatarUrl,
+      });
+
+      const updated = await getUserProfile(user.uid);
+      if (updated) setProfile(updated);
+
       Toast.show({ type: 'success', text1: 'Profile updated!' });
       router.back();
-    } catch {
-      Toast.show({ type: 'error', text1: 'Failed to save changes' });
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Failed to save changes', text2: err?.message });
     } finally {
       setLoading(false);
     }
@@ -72,7 +98,7 @@ export default function EditProfileScreen() {
             <View style={{ width: 22 }} />
           </View>
 
-          <Pressable onPress={pickAvatar} style={styles.avatarWrap}>
+          <Pressable onPress={pickAvatar} disabled={pickingImage} style={styles.avatarWrap}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
@@ -81,13 +107,22 @@ export default function EditProfileScreen() {
               </View>
             )}
             <View style={styles.cameraIcon}>
-              <Ionicons name="camera" size={14} color="#FFFFFF" />
+              {pickingImage ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="camera" size={14} color="#FFFFFF" />
+              )}
             </View>
           </Pressable>
 
           <View style={styles.form}>
             <FormInput label="Full name" value={fullName} onChangeText={setFullName} error={errors.fullName} />
-            <FormInput label="Course / Program" value={course} onChangeText={setCourse} error={errors.course} />
+            <CoursePicker
+              value={course}
+              onChange={setCourse}
+              error={errors.course}
+              includeCustomValue
+            />
             <View style={styles.section}>
               <Text style={styles.label}>Role</Text>
               <View style={styles.roleRow}>
