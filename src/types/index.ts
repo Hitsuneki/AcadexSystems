@@ -10,9 +10,11 @@ export type ColumnKey = 'backlog' | 'inProgress' | 'review' | 'done';
 
 export interface UserProfile {
   id: string;
+  uid?: string;
   fullName: string;
   email: string;
   avatarUri?: string;
+  avatarUrl?: string;
   course: string;
   roleLabel: RoleLabel;
   bio?: string;
@@ -32,13 +34,17 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   ownerId: string;
+  createdBy?: string;
+  status?: 'active' | 'archived';
   isArchived?: boolean;
 }
 
 export interface TaskChecklist {
   id: string;
   text: string;
+  label?: string;
   isCompleted: boolean;
+  isDone?: boolean;
 }
 
 export interface Task {
@@ -47,14 +53,18 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  column?: string;
+  taskStatus?: 'active' | 'completed' | 'cancelled';
   priority: Priority;
   dueDate?: string;
   assigneeIds: string[];
+  attachmentUrls?: string[];
   checklist?: TaskChecklist[];
   attachmentIds?: string[];
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+  completedAt?: string | null;
 }
 
 export interface ProjectFile {
@@ -64,8 +74,12 @@ export interface ProjectFile {
   fileType: FileType;
   fileSize: number;
   storageUrl: string;
+  storagePath?: string;
+  status?: 'uploading' | 'available' | 'failed' | 'deleted';
   uploadedBy: string;
   uploadedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Note {
@@ -73,6 +87,7 @@ export interface Note {
   projectId: string;
   title: string;
   body: string;
+  createdBy?: string;
   lastEditedBy: string;
   updatedAt: string;
   createdAt: string;
@@ -88,7 +103,9 @@ export interface Announcement {
   projectId: string;
   authorId: string;
   body: string;
+  attachmentUrl?: string | null;
   reactions: AnnouncementReaction[];
+  status?: 'active' | 'deleted';
   createdAt: string;
 }
 
@@ -96,7 +113,9 @@ export interface ActionItem {
   id: string;
   body: string;
   assignedTo?: string;
+  pushedToTaskId?: string | null;
   status: ActionItemStatus;
+  createdAt?: any;
 }
 
 export interface Meeting {
@@ -104,10 +123,16 @@ export interface Meeting {
   projectId: string;
   title: string;
   date: string;
+  heldAt?: any;
+  nextMeetingAt?: any;
   attendeeIds: string[];
+  agendaItems?: string[];
+  decisions?: string;
   notes?: string;
   actionItems: ActionItem[];
+  createdBy?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Activity {
@@ -117,7 +142,9 @@ export interface Activity {
   actionType: string;
   entityType: string;
   entityId: string;
+  metadata?: Record<string, unknown>;
   timestamp: string;
+  createdAt?: string;
 }
 
 export interface KanbanColumns {

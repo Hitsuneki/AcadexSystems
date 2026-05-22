@@ -1,28 +1,33 @@
-/**
- * useFiles — file list for a project.
- */
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+
+import { listenToProjectFiles } from '@/services/file.service';
 import type { ProjectFile } from '@/types';
 
-export function useFiles(_projectId: string | undefined) {
+export function useFiles(projectId: string | undefined) {
   const [files, setFiles] = useState<ProjectFile[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const reload = useCallback(() => {
-    if (!_projectId) return;
-    setLoading(true);
-    // TODO: fetch files from backend
-    setTimeout(() => { setFiles([]); setLoading(false); }, 300);
-  }, [_projectId]);
+  const [loading, setLoading] = useState(Boolean(projectId));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!_projectId) { setLoading(false); return; }
-    const timer = setTimeout(() => { setFiles([]); setLoading(false); }, 300);
-    return () => clearTimeout(timer);
-  }, [_projectId]);
+    if (!projectId) {
+      setFiles([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToProjectFiles(projectId, (nextFiles) => {
+      setFiles(nextFiles);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [projectId]);
 
   const addOptimistic = (file: ProjectFile) => setFiles((prev) => [file, ...prev]);
-  const removeOptimistic = (fileId: string) => setFiles((prev) => prev.filter((f) => f.id !== fileId));
+  const removeOptimistic = (fileId: string) => setFiles((prev) => prev.filter((file) => file.id !== fileId));
+  const reload = () => undefined;
 
-  return { files, loading, reload, addOptimistic, removeOptimistic };
+  return { files, loading, error, reload, addOptimistic, removeOptimistic };
 }

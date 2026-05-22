@@ -18,11 +18,10 @@ import type { Project } from '@/types';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, profile } = useAuthStore();
+  const { user } = useAuthStore();
   const { addProject, projects: storeProjects } = useProjectStore();
   const { projects: fetchedProjects, loading } = useUserProjects(user?.uid);
-  const [showCreate, setShowCreate] = useState(false);
-  const [showJoin, setShowJoin] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<'create' | 'join' | null>(null);
 
   // Merge store projects (created/joined this session) with backend-fetched projects
   const displayProjects = [
@@ -30,8 +29,8 @@ export default function HomeScreen() {
     ...fetchedProjects.filter((p) => !storeProjects.some((s) => s.id === p.id)),
   ];
 
-  const handleProjectCreated = (p: Project) => addProject(p);
-  const handleProjectJoined = (p: Project) => addProject(p);
+  const handleProjectCreated = (p: Project) => { addProject(p); setActiveSheet(null); };
+  const handleProjectJoined = (p: Project) => { addProject(p); setActiveSheet(null); };
 
   if (loading) return <LoadingSpinner fullscreen />;
 
@@ -59,7 +58,7 @@ export default function HomeScreen() {
             title="No projects yet"
             subtitle="Create or join a project to get started"
             action="Create project"
-            onAction={() => setShowCreate(true)}
+            onAction={() => setActiveSheet('create')}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -67,10 +66,10 @@ export default function HomeScreen() {
 
       {/* FAB */}
       <View style={styles.fabArea}>
-        <Pressable onPress={() => setShowJoin(true)} style={styles.joinLink}>
+        <Pressable onPress={() => setActiveSheet('join')} style={styles.joinLink}>
           <Text style={styles.joinLinkText}>Join a project</Text>
         </Pressable>
-        <Pressable onPress={() => setShowCreate(true)} style={styles.fab}>
+        <Pressable onPress={() => setActiveSheet('create')} style={styles.fab}>
           <Ionicons name="add" size={26} color="#FFFFFF" />
         </Pressable>
       </View>
@@ -78,14 +77,14 @@ export default function HomeScreen() {
       {user && (
         <>
           <CreateProjectSheet
-            visible={showCreate}
-            onClose={() => setShowCreate(false)}
+            visible={activeSheet === 'create'}
+            onClose={() => setActiveSheet(null)}
             userId={user.uid}
             onCreated={handleProjectCreated}
           />
           <JoinProjectSheet
-            visible={showJoin}
-            onClose={() => setShowJoin(false)}
+            visible={activeSheet === 'join'}
+            onClose={() => setActiveSheet(null)}
             userId={user.uid}
             onJoined={handleProjectJoined}
           />

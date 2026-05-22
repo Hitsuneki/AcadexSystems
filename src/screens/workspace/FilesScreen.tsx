@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { View, FlatList, Pressable, StyleSheet, Linking, Alert } from 'react-native';
+import { View, FlatList, Pressable, StyleSheet } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystemAPI from 'expo-file-system';
+import { useRouter } from 'expo-router';
 import { Toast } from '@/components/AcadexToast';
 import { Ionicons } from '@expo/vector-icons';
 
 import { FileCard } from '@/components/FileCard';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { StatusBadge } from '@/components/StatusBadge';
 import { useAuthStore } from '@/stores/auth.store';
 import { useFiles } from '@/hooks/use-files';
 import { uploadFile } from '@/services/storage.service';
@@ -20,6 +19,7 @@ interface FilesScreenProps {
 }
 
 export default function FilesScreen({ projectId }: FilesScreenProps) {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { files, loading, addOptimistic } = useFiles(projectId);
   const [uploading, setUploading] = useState(false);
@@ -31,7 +31,6 @@ export default function FilesScreen({ projectId }: FilesScreenProps) {
     if (!user) return;
 
     setUploading(true);
-    // Optimistic update
     const optimistic: ProjectFile = {
       id: `uploading-${Date.now()}`,
       projectId,
@@ -45,7 +44,7 @@ export default function FilesScreen({ projectId }: FilesScreenProps) {
     addOptimistic(optimistic);
 
     try {
-      const file = await uploadFile(projectId, user.uid, asset.uri, asset.name, asset.size ?? 0);
+      await uploadFile(projectId, user.uid, asset.uri, asset.name, asset.size ?? 0);
       Toast.show({ type: 'success', text1: 'File uploaded!' });
     } catch {
       Toast.show({ type: 'error', text1: 'Upload failed' });
@@ -55,12 +54,7 @@ export default function FilesScreen({ projectId }: FilesScreenProps) {
   };
 
   const handleFilePress = (file: ProjectFile) => {
-    const viewableTypes = ['jpg', 'png'];
-    if (viewableTypes.includes(file.fileType)) {
-      // Navigate to viewer — could be a modal or stack screen
-    } else {
-      Linking.openURL(file.storageUrl);
-    }
+    router.push(`/project/${projectId}/file/${file.id}` as never);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -76,7 +70,6 @@ export default function FilesScreen({ projectId }: FilesScreenProps) {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Upload FAB */}
       <Pressable onPress={handleUpload} disabled={uploading} style={[styles.fab, uploading && styles.fabDisabled]}>
         <Ionicons name={uploading ? 'hourglass-outline' : 'cloud-upload-outline'} size={22} color="#FFFFFF" />
       </Pressable>

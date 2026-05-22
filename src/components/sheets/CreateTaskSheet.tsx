@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
 import { Toast } from '@/components/AcadexToast';
 import { AcadexBottomSheet } from '../AcadexBottomSheet';
 import { FormInput } from '../FormInput';
@@ -82,7 +83,7 @@ export function CreateTaskSheet({ visible, onClose, projectId, userId, initialCo
         <View style={styles.section}>
           <Text style={styles.label}>Due date (optional)</Text>
           <Pressable onPress={() => setShowDatePicker(true)} style={styles.dateBtn}>
-            <Text style={styles.dateBtnText}>{dueDate ? dueDate.toLocaleDateString() : 'Select date'}</Text>
+            <Text style={styles.dateBtnText}>{dueDate ? format(dueDate, 'MMM d, yyyy') : 'Select date'}</Text>
           </Pressable>
           {showDatePicker && (
             <DateTimePicker

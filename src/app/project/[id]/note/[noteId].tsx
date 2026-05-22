@@ -19,7 +19,7 @@ export default function NoteDetailScreen() {
   const { id: projectId, noteId } = useLocalSearchParams<{ id: string; noteId: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { notes } = useNotes(projectId);
+  const { notes, updateNote: storeUpdateNote } = useNotes(projectId);
   const note = notes.find((n) => n.id === noteId);
 
   const [title, setTitle] = useState(note?.title ?? '');
@@ -36,6 +36,7 @@ export default function NoteDetailScreen() {
     setSaving(true);
     try {
       await updateNote(noteId, { title: title.trim(), body, lastEditedBy: user.uid });
+      storeUpdateNote(noteId, { title: title.trim(), body, lastEditedBy: user.uid, updatedAt: new Date().toISOString() });
       Toast.show({ type: 'success', text1: 'Note saved' });
       setEditing(false);
     } catch {

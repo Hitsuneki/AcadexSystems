@@ -1,23 +1,32 @@
-/**
- * useUserProjects — returns projects for a given userId.
- * Backend engineer implements the real subscription here.
- */
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+import { listenToUserProjects } from '@/services/project.service';
+import { useProjectStore } from '@/stores/project.store';
 import type { Project } from '@/types';
 
-export function useUserProjects(_userId: string | undefined) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useUserProjects(userId: string | undefined) {
+  const { setProjects } = useProjectStore();
+  const [projects, setLocalProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(Boolean(userId));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!_userId) { setLoading(false); return; }
-    // TODO: subscribe to user's projects from backend
-    const timer = setTimeout(() => {
-      setProjects([]);
+    if (!userId) {
+      setLocalProjects([]);
       setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [_userId]);
+      return undefined;
+    }
 
-  return { projects, loading };
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToUserProjects(userId, (nextProjects) => {
+      setLocalProjects(nextProjects);
+      setProjects(nextProjects);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [setProjects, userId]);
+
+  return { projects, loading, error };
 }

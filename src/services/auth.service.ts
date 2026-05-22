@@ -1,8 +1,17 @@
-/**
- * Auth service — stub (backend implementation lives here).
- * DO NOT import Firebase / Supabase in UI components; use these exports only.
- */
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+  type UserCredential,
+} from 'firebase/auth';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+
+import { auth, db } from '@/config/firebase';
 import type { RoleLabel, UserProfile } from '@/types';
+import { mapUserProfile } from './mappers';
+import { uploadAvatar as uploadAvatarToStorage } from './storage.service';
 
 export interface LoginPayload {
   email: string;
@@ -10,7 +19,7 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  fullName: string;
+  fullName?: string;
   email: string;
   password: string;
 }
@@ -21,35 +30,112 @@ export interface CreateProfilePayload {
   roleLabel: RoleLabel;
   bio?: string;
   avatarUri?: string;
+  avatarUrl?: string;
 }
 
-export async function loginUser(_payload: LoginPayload): Promise<void> {
-  // TODO: implement
-  await new Promise((r) => setTimeout(r, 800));
+function resolveEmailPassword(
+  emailOrPayload: string | LoginPayload | RegisterPayload,
+  password?: string,
+): { email: string; password: string } {
+  if (typeof emailOrPayload === 'string') {
+    return { email: emailOrPayload, password: password ?? '' };
+  }
+  return { email: emailOrPayload.email, password: emailOrPayload.password };
 }
 
-export async function registerUser(_payload: RegisterPayload): Promise<{ uid: string }> {
-  // TODO: implement
-  await new Promise((r) => setTimeout(r, 800));
-  return { uid: 'stub-uid' };
+export async function registerUser(
+  emailOrPayload: string | RegisterPayload,
+  password?: string,
+): Promise<UserCredential & { uid: string }> {
+  const credentials = resolveEmailPassword(emailOrPayload, password);
+  try {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      credentials.email.trim(),
+      credentials.password,
+    );
+    return Object.assign(userCredential, { uid: userCredential.user.uid });
+  } catch (error: any) {
+    throw new Error(`Registration failed: ${error.message}`);
+  }
 }
 
-export async function createUserProfile(_uid: string, _payload: CreateProfilePayload): Promise<void> {
-  // TODO: implement
-  await new Promise((r) => setTimeout(r, 400));
+export async function loginUser(
+  emailOrPayload: string | LoginPayload,
+  password?: string,
+): Promise<UserCredential> {
+  const credentials = resolveEmailPassword(emailOrPayload, password);
+  try {
+    return await signInWithEmailAndPassword(auth, credentials.email.trim(), credentials.password);
+  } catch (error: any) {
+    throw new Error(`Login failed: ${error.message}`);
+  }
 }
 
-export async function updateUserProfile(_uid: string, _payload: Partial<CreateProfilePayload>): Promise<void> {
-  // TODO: implement
-  await new Promise((r) => setTimeout(r, 400));
+export async function logoutUser(): Promise<void> {
+  try {
+    await signOut(auth);
+  } catch (error: any) {
+    throw new Error(`Logout failed: ${error.message}`);
+  }
 }
 
-export async function uploadAvatar(_uid: string, _localUri: string): Promise<string> {
-  // TODO: implement — returns remote URL
-  await new Promise((r) => setTimeout(r, 600));
-  return _localUri;
+export function onAuthStateChange(callback: (user: User | null) => void): () => void {
+  return onAuthStateChanged(auth, callback);
+}
+
+export async function createUserProfile(
+  userId: string,
+  data: CreateProfilePayload & Partial<UserProfile>,
+): Promise<void> {
+  try {
+    await setDoc(doc(db, 'users', userId), {
+      uid: userId,
+      fullName: data.fullName ?? '',
+      email: data.email ?? auth.currentUser?.email ?? '',
+      avatarUrl: data.avatarUrl ?? data.avatarUri ?? '',
+      bio: data.bio ?? '',
+      course: data.course ?? '',
+      roleLabel: data.roleLabel ?? 'Student',
+      projectIds: data.projectIds ?? [],
+      completedTasksCount: data.completedTasksCount ?? 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to create user profile: ${error.message}`);
+  }
+}
+
+export async function updateUserProfile(
+  userId: string,
+  data: Partial<CreateProfilePayload & UserProfile>,
+): Promise<void> {
+  try {
+    const payload: Record<string, unknown> = { ...data, updatedAt: serverTimestamp() };
+    if (data.avatarUri && !data.avatarUrl) payload.avatarUrl = data.avatarUri;
+    delete payload.id;
+    delete payload.uid;
+    await updateDoc(doc(db, 'users', userId), payload);
+  } catch (error: any) {
+    throw new Error(`Failed to update user profile: ${error.message}`);
+  }
+}
+
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  try {
+    const snapshot = await getDoc(doc(db, 'users', userId));
+    if (!snapshot.exists()) return null;
+    return mapUserProfile(snapshot.id, snapshot.data());
+  } catch (error: any) {
+    throw new Error(`Failed to get user profile: ${error.message}`);
+  }
+}
+
+export async function uploadAvatar(uid: string, localUri: string, mimeType?: string): Promise<string> {
+  return uploadAvatarToStorage(uid, localUri, mimeType);
 }
 
 export async function signOutUser(): Promise<void> {
-  // TODO: implement
+  await logoutUser();
 }

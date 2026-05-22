@@ -1,20 +1,38 @@
-/**
- * useNotes — note list for a project.
- */
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+import { listenToProjectNotes } from '@/services/note.service';
+import { useNotesStore } from '@/stores/notes.store';
 import type { Note } from '@/types';
 
-export function useNotes(_projectId: string | undefined) {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useNotes(projectId: string | undefined) {
+  const { notesByProject, addNote, updateNote: storeUpdateNote, setNotes } = useNotesStore();
+  const [loading, setLoading] = useState(Boolean(projectId));
+  const [error, setError] = useState<Error | null>(null);
+  const notes: Note[] = projectId ? notesByProject[projectId] ?? [] : [];
 
   useEffect(() => {
-    if (!_projectId) { setLoading(false); return; }
-    const timer = setTimeout(() => { setNotes([]); setLoading(false); }, 300);
-    return () => clearTimeout(timer);
-  }, [_projectId]);
+    if (!projectId) {
+      setLoading(false);
+      return undefined;
+    }
 
-  const addNote = (note: Note) => setNotes((prev) => [note, ...prev]);
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToProjectNotes(projectId, (nextNotes) => {
+      setNotes(projectId, nextNotes);
+      setLoading(false);
+    });
 
-  return { notes, loading, addNote };
+    return unsubscribe;
+  }, [projectId, setNotes]);
+
+  const addNoteLocal = (note: Note) => {
+    if (projectId) addNote(projectId, note);
+  };
+
+  const updateNoteLocal = (noteId: string, patch: Partial<Note>) => {
+    if (projectId) storeUpdateNote(projectId, noteId, patch);
+  };
+
+  return { notes, loading, error, addNote: addNoteLocal, updateNote: updateNoteLocal };
 }

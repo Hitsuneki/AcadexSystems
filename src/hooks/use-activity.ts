@@ -1,19 +1,29 @@
-/**
- * useActivity — recent activity feed for a project.
- */
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+import { listenToProjectActivity } from '@/services/activity.service';
 import type { Activity } from '@/types';
 
-export function useActivity(_projectId: string | undefined, _limit = 20) {
+export function useActivity(projectId: string | undefined, limit = 20) {
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(projectId));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!_projectId) { setLoading(false); return; }
-    // TODO: fetch limited activity feed from backend
-    const timer = setTimeout(() => { setActivities([]); setLoading(false); }, 300);
-    return () => clearTimeout(timer);
-  }, [_projectId, _limit]);
+    if (!projectId) {
+      setActivities([]);
+      setLoading(false);
+      return undefined;
+    }
 
-  return { activities, loading };
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToProjectActivity(projectId, limit, (nextActivities) => {
+      setActivities(nextActivities);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [projectId, limit]);
+
+  return { activities, loading, error };
 }

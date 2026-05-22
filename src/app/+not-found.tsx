@@ -9,7 +9,7 @@ export default function NotFoundScreen() {
     <View style={styles.container}>
       <Text style={styles.code}>404</Text>
       <Text style={styles.message}>Page not found</Text>
-      <Pressable onPress={() => router.replace('/(main)/')} style={styles.btn}>
+      <Pressable onPress={() => router.replace('/(main)' as never)} style={styles.btn}>
         <Text style={styles.btnText}>Go home</Text>
       </Pressable>
     </View>

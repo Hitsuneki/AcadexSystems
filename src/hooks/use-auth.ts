@@ -1,18 +1,31 @@
-/**
- * useAuth — reads from auth.store (populated by backend listener).
- * Backend engineer sets up onAuthStateChanged → useAuthStore.setUser/setProfile.
- */
 import { useEffect } from 'react';
+
+import { getUserProfile, onAuthStateChange } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/auth.store';
 
 export function useAuth() {
-  const { user, profile, loading, setLoading } = useAuthStore();
+  const { user, profile, loading, setUser, setProfile, setLoading } = useAuthStore();
 
-  // Simulate initial auth check resolving (backend replaces this)
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, [setLoading]);
+    setLoading(true);
+    const unsubscribe = onAuthStateChange(async (firebaseUser) => {
+      try {
+        if (!firebaseUser) {
+          setUser(null);
+          setProfile(null);
+          return;
+        }
 
-  return { user, profile, loading, isAuthenticated: !!user };
+        setUser({ uid: firebaseUser.uid, email: firebaseUser.email ?? '' });
+        const userProfile = await getUserProfile(firebaseUser.uid);
+        setProfile(userProfile);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    return unsubscribe;
+  }, [setLoading, setProfile, setUser]);
+
+  return { user, profile, loading, isAuthenticated: Boolean(user) };
 }

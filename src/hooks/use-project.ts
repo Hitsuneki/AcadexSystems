@@ -1,33 +1,31 @@
-/**
- * useProject — loads a project by ID into the project store.
- * Call this in every project screen to ensure currentProject is populated,
- * even when navigating directly (e.g. deep link).
- */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+import { listenToProject } from '@/services/project.service';
 import { useProjectStore } from '@/stores/project.store';
-import { useAuthStore } from '@/stores/auth.store';
-import { useUserProjects } from './use-user-projects';
+import type { Project } from '@/types';
 
 export function useProject(projectId: string | undefined) {
-  const { currentProject, setCurrentProject, projects: storeProjects } = useProjectStore();
-  const { user } = useAuthStore();
-  const { projects: fetchedProjects } = useUserProjects(user?.uid);
+  const { setCurrentProject } = useProjectStore();
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(Boolean(projectId));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!projectId) return;
-    if (currentProject?.id === projectId) return;
-
-    // Search store projects first (covers locally created/joined projects),
-    // then fall back to backend-fetched projects
-    const found =
-      storeProjects.find((p) => p.id === projectId) ??
-      fetchedProjects.find((p) => p.id === projectId);
-
-    if (found) {
-      setCurrentProject(found);
+    if (!projectId) {
+      setLoading(false);
+      return undefined;
     }
-    // TODO: if not found, fetch from backend using getProject(projectId)
-  }, [projectId, storeProjects, fetchedProjects, currentProject]);
 
-  return { project: currentProject?.id === projectId ? currentProject : null };
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToProject(projectId, (nextProject) => {
+      setProject(nextProject);
+      setCurrentProject(nextProject);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [projectId, setCurrentProject]);
+
+  return { project, loading, error };
 }

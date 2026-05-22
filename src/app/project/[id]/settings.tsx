@@ -49,13 +49,13 @@ export default function ProjectSettingsScreen() {
     if (!user) return;
     await leaveProject(user.uid, projectId);
     setShowLeave(false);
-    router.replace('/(main)/');
+    router.replace('/(main)' as never);
   };
 
   const handleArchive = async () => {
     await archiveProject(projectId);
     setShowArchive(false);
-    router.replace('/(main)/');
+    router.replace('/(main)' as never);
   };
 
   return (

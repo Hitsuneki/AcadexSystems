@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { KanbanColumn } from '@/components/KanbanColumn';
 import { CreateTaskSheet } from '@/components/sheets/CreateTaskSheet';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { Toast } from '@/components/AcadexToast';
 import { useAuthStore } from '@/stores/auth.store';
 import { useProjectMembers } from '@/hooks/use-project-members';
 import { useTasks } from '@/hooks/use-tasks';
@@ -38,7 +39,19 @@ export default function BoardScreen({ projectId }: BoardScreenProps) {
   const displayColumns = localColumns ?? columns;
 
   const handleDragEnd = async (col: ColumnKey, newTasks: Task[]) => {
+    const previousColumns = localColumns ?? columns;
+    const previousTasks = previousColumns[col];
+    const movedTask = newTasks.find((task, index) => previousTasks[index]?.id !== task.id);
     setLocalColumns((prev) => ({ ...(prev ?? columns), [col]: newTasks }));
+
+    if (!movedTask) return;
+
+    try {
+      await moveTask(movedTask.id, col, col);
+    } catch {
+      setLocalColumns(previousColumns);
+      Toast.show({ type: 'error', text1: 'Could not move task' });
+    }
   };
 
   const handleOpenCreate = (col: ColumnKey) => {
@@ -73,7 +86,14 @@ export default function BoardScreen({ projectId }: BoardScreenProps) {
           userId={user.uid}
           initialColumn={createColumn}
           members={members}
-          onCreated={() => setShowCreate(false)}
+          onCreated={(task) => {
+            const col = task.status as ColumnKey;
+            setLocalColumns((prev) => {
+              const base = prev ?? columns;
+              return { ...base, [col]: [task, ...base[col]] };
+            });
+            setShowCreate(false);
+          }}
         />
       )}
     </View>

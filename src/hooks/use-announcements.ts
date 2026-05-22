@@ -1,38 +1,46 @@
-/**
- * useAnnouncements — real-time announcements feed for a project.
- */
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+import { listenToAnnouncements } from '@/services/announcement.service';
 import type { Announcement } from '@/types';
 
-export function useAnnouncements(_projectId: string | undefined) {
+export function useAnnouncements(projectId: string | undefined) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(projectId));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!_projectId) { setLoading(false); return; }
-    const timer = setTimeout(() => { setAnnouncements([]); setLoading(false); }, 300);
-    return () => clearTimeout(timer);
-  }, [_projectId]);
+    if (!projectId) {
+      setAnnouncements([]);
+      setLoading(false);
+      return undefined;
+    }
 
-  const addAnnouncement = (ann: Announcement) => setAnnouncements((prev) => [ann, ...prev]);
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToAnnouncements(projectId, (nextAnnouncements) => {
+      setAnnouncements(nextAnnouncements);
+      setLoading(false);
+    });
 
-  const removeAnnouncement = (id: string) =>
-    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    return unsubscribe;
+  }, [projectId]);
 
+  const addAnnouncement = (announcement: Announcement) => setAnnouncements((prev) => [announcement, ...prev]);
+  const removeAnnouncement = (id: string) => setAnnouncements((prev) => prev.filter((announcement) => announcement.id !== id));
   const toggleReactionLocal = (id: string, userId: string) => {
     setAnnouncements((prev) =>
-      prev.map((a) => {
-        if (a.id !== id) return a;
-        const hasReacted = a.reactions.some((r) => r.userId === userId);
+      prev.map((announcement) => {
+        if (announcement.id !== id) return announcement;
+        const existing = announcement.reactions.some((reaction) => reaction.userId === userId);
         return {
-          ...a,
-          reactions: hasReacted
-            ? a.reactions.filter((r) => r.userId !== userId)
-            : [...a.reactions, { userId, type: 'thumbsUp' as const }],
+          ...announcement,
+          reactions: existing
+            ? announcement.reactions.filter((reaction) => reaction.userId !== userId)
+            : [...announcement.reactions, { userId, type: 'thumbsUp' as const }],
         };
       }),
     );
   };
 
-  return { announcements, loading, addAnnouncement, removeAnnouncement, toggleReactionLocal };
+  return { announcements, loading, error, addAnnouncement, removeAnnouncement, toggleReactionLocal };
 }

@@ -1,20 +1,31 @@
-/**
- * useMeetings — meeting list for a project.
- */
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+import { listenToProjectMeetings } from '@/services/meeting.service';
 import type { Meeting } from '@/types';
 
-export function useMeetings(_projectId: string | undefined) {
+export function useMeetings(projectId: string | undefined) {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(projectId));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!_projectId) { setLoading(false); return; }
-    const timer = setTimeout(() => { setMeetings([]); setLoading(false); }, 300);
-    return () => clearTimeout(timer);
-  }, [_projectId]);
+    if (!projectId) {
+      setMeetings([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToProjectMeetings(projectId, (nextMeetings) => {
+      setMeetings(nextMeetings);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [projectId]);
 
   const addMeeting = (meeting: Meeting) => setMeetings((prev) => [meeting, ...prev]);
 
-  return { meetings, loading, addMeeting };
+  return { meetings, loading, error, addMeeting };
 }

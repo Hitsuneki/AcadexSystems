@@ -1,7 +1,6 @@
-/**
- * useMyTasks — cross-project tasks assigned to the current user.
- */
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+import { getTasksByAssignee } from '@/services/task.service';
 import type { Task } from '@/types';
 
 export interface GroupedTasks {
@@ -10,19 +9,42 @@ export interface GroupedTasks {
   tasks: Task[];
 }
 
-export function useMyTasks(_userId: string | undefined) {
+export function useMyTasks(userId: string | undefined) {
   const [groups, setGroups] = useState<GroupedTasks[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({});
+  const [loading, setLoading] = useState(Boolean(userId));
+  const [error, setError] = useState<Error | null>(null);
+
+  const refetch = useCallback(async () => {
+    if (!userId) {
+      setGroups([]);
+      setTasks({});
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const grouped = await getTasksByAssignee(userId);
+      setTasks(grouped);
+      setGroups(
+        Object.entries(grouped).map(([projectId, projectTasks]) => ({
+          projectId,
+          projectName: projectId,
+          tasks: projectTasks,
+        })),
+      );
+    } catch (err: any) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
-    if (!_userId) { setLoading(false); return; }
-    // TODO: query tasks assigned to userId across all projects
-    const timer = setTimeout(() => {
-      setGroups([]);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [_userId]);
+    refetch();
+  }, [refetch]);
 
-  return { groups, loading };
+  return { groups, tasks, loading, error, refetch };
 }

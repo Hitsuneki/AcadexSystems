@@ -32,13 +32,13 @@ export default function RootLayout() {
     const inAuth = segs[0] === '(auth)';
 
     if (!user) {
-      if (!inAuth) router.replace('/(auth)/');
+      if (!inAuth) router.replace('/(auth)' as never);
     } else if (!profile) {
       if (!(inAuth && segs[1] === 'complete-profile')) {
         router.replace('/(auth)/complete-profile');
       }
     } else {
-      if (inAuth) router.replace('/(main)/');
+      if (inAuth) router.replace('/(main)' as never);
     }
   }, [user, profile, authLoading, fontsLoaded]);
 

@@ -1,19 +1,40 @@
-/**
- * useProjectMembers — fetches member profiles for a list of member IDs.
- */
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+import { getUserProfile } from '@/services/auth.service';
 import type { UserProfile } from '@/types';
 
-export function useProjectMembers(_memberIds: string[] | undefined) {
+export function useProjectMembers(memberIds: string[] | undefined) {
   const [members, setMembers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(memberIds?.length));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!_memberIds || _memberIds.length === 0) { setLoading(false); return; }
-    // TODO: batch-fetch user profiles from backend
-    const timer = setTimeout(() => { setMembers([]); setLoading(false); }, 300);
-    return () => clearTimeout(timer);
-  }, [JSON.stringify(_memberIds)]);
+    let cancelled = false;
 
-  return { members, loading };
+    async function loadMembers() {
+      if (!memberIds || memberIds.length === 0) {
+        setMembers([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const profiles = await Promise.all(memberIds.map((id) => getUserProfile(id)));
+        if (!cancelled) setMembers(profiles.filter(Boolean) as UserProfile[]);
+      } catch (err: any) {
+        if (!cancelled) setError(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadMembers();
+    return () => {
+      cancelled = true;
+    };
+  }, [JSON.stringify(memberIds ?? [])]);
+
+  return { members, loading, error };
 }

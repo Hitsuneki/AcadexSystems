@@ -29,6 +29,14 @@ interface AcadexBottomSheetProps {
   scrollable?: boolean;
 }
 
+type AcadexBackdropProps = BottomSheetBackdropProps & {
+  disappearsOnIndex?: number;
+  appearsOnIndex?: number;
+  opacity?: number;
+  pressBehavior?: 'none' | 'close';
+  onPress?: () => void;
+};
+
 /** Web-safe backdrop: pointerEvents lives in style, not on the View prop. */
 function AcadexBackdrop({
   animatedIndex,
@@ -38,7 +46,7 @@ function AcadexBackdrop({
   opacity = 0.5,
   pressBehavior = 'close',
   onPress,
-}: BottomSheetBackdropProps) {
+}: AcadexBackdropProps) {
   const { close } = useBottomSheet();
   const [pointerEvents, setPointerEvents] = useState<'none' | 'auto'>('none');
 

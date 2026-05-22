@@ -1,35 +1,48 @@
-/**
- * useTasks — real-time task list for a project, organised by column.
- */
-import { useState, useEffect } from 'react';
-import type { Task, KanbanColumns } from '@/types';
+import { useEffect, useMemo, useState } from 'react';
 
-export function useTasks(_projectId: string | undefined) {
+import { listenToProjectTasks } from '@/services/task.service';
+import type { KanbanColumns, Task } from '@/types';
+
+export function useTasks(projectId: string | undefined) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(projectId));
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!_projectId) { setLoading(false); return; }
-    // TODO: subscribe to tasks for this project
-    const timer = setTimeout(() => {
+    if (!projectId) {
       setTasks([]);
       setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [_projectId]);
+      return undefined;
+    }
 
-  const columns: KanbanColumns = {
-    backlog: tasks.filter((t) => t.status === 'backlog'),
-    inProgress: tasks.filter((t) => t.status === 'inProgress'),
-    review: tasks.filter((t) => t.status === 'review'),
-    done: tasks.filter((t) => t.status === 'done'),
-  };
+    setLoading(true);
+    setError(null);
+    const unsubscribe = listenToProjectTasks(projectId, (nextTasks) => {
+      setTasks(nextTasks);
+      setLoading(false);
+    });
 
-  const overdue = tasks.filter(
-    (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'done' && t.status !== 'cancelled',
+    return unsubscribe;
+  }, [projectId]);
+
+  const columns: KanbanColumns = useMemo(
+    () => ({
+      backlog: tasks.filter((task) => task.status === 'backlog'),
+      inProgress: tasks.filter((task) => task.status === 'inProgress'),
+      review: tasks.filter((task) => task.status === 'review'),
+      done: tasks.filter((task) => task.status === 'done'),
+    }),
+    [tasks],
   );
 
-  const completedCount = tasks.filter((t) => t.status === 'done').length;
+  const overdue = tasks.filter(
+    (task) =>
+      task.dueDate &&
+      new Date(task.dueDate) < new Date() &&
+      task.status !== 'done' &&
+      task.status !== 'cancelled',
+  );
+  const completedCount = tasks.filter((task) => task.status === 'done').length;
 
-  return { tasks, columns, overdue, completedCount, loading };
+  return { tasks, columns, backlog: columns.backlog, inProgress: columns.inProgress, review: columns.review, done: columns.done, overdue, completedCount, loading, error };
 }
