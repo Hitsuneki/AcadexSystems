@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +19,7 @@ import { BG, BORDER, TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
 import { CardDefaults, InputDefaults } from '@/constants/theme';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { formatMeetingDate } from '@/utils/date';
-import type { ActionItemStatus } from '@/types';
+import type { ActionItem, ActionItemStatus } from '@/types';
 
 const ACTION_STATUS: Record<ActionItemStatus, { label: string; color: string; bg: string }> = {
   pending: { label: 'Pending', color: SEMANTIC.amber, bg: SEMANTIC.amberDim },
@@ -32,7 +32,7 @@ export default function MeetingDetailScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { currentProject } = useProjectStore();
-  const { meetings, addMeeting } = useMeetings(projectId);
+  const { meetings, loading, addMeeting } = useMeetings(projectId);
   const { members } = useProjectMembers(currentProject?.memberIds);
 
   const isCreate = meetingId === 'new';
@@ -43,9 +43,21 @@ export default function MeetingDetailScreen() {
   const [showDate, setShowDate] = useState(false);
   const [notes, setNotes] = useState(meeting?.notes ?? '');
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>(meeting?.attendeeIds ?? []);
-  const [actionItems, setActionItems] = useState(meeting?.actionItems ?? []);
+  const [actionItems, setActionItems] = useState<ActionItem[]>(meeting?.actionItems ?? []);
   const [newActionItem, setNewActionItem] = useState('');
   const [saving, setSaving] = useState(false);
+  const [hydratedMeetingId, setHydratedMeetingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isCreate || !meeting || hydratedMeetingId === meeting.id) return;
+
+    setTitle(meeting.title);
+    setDate(new Date(meeting.date));
+    setNotes(meeting.notes ?? '');
+    setSelectedAttendees(meeting.attendeeIds);
+    setActionItems(meeting.actionItems);
+    setHydratedMeetingId(meeting.id);
+  }, [hydratedMeetingId, isCreate, meeting]);
 
   const toggleAttendee = (id: string) =>
     setSelectedAttendees((prev) => prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]);
@@ -60,12 +72,18 @@ export default function MeetingDetailScreen() {
           date: date.toISOString(),
           attendeeIds: selectedAttendees,
           notes: notes.trim() || undefined,
-          actionItems: actionItems.map(({ id, ...rest }) => rest),
+          actionItems,
         });
         addMeeting(m);
         Toast.show({ type: 'success', text1: 'Meeting created!' });
       } else if (meeting) {
-        await updateMeeting(meeting.id, { title: title.trim(), date: date.toISOString(), notes: notes.trim(), attendeeIds: selectedAttendees });
+        await updateMeeting(meeting.id, {
+          title: title.trim(),
+          date: date.toISOString(),
+          notes: notes.trim(),
+          attendeeIds: selectedAttendees,
+          actionItems,
+        });
         Toast.show({ type: 'success', text1: 'Meeting saved' });
       }
       router.back();
@@ -78,13 +96,15 @@ export default function MeetingDetailScreen() {
 
   const handlePushToBoard = async (actionId: string) => {
     try {
-      await pushActionItemToBoard(meetingId, actionId, projectId);
+      await pushActionItemToBoard(meetingId, actionId, projectId, user?.uid);
       setActionItems((prev) => prev.map((ai) => ai.id === actionId ? { ...ai, status: 'pushed' as ActionItemStatus } : ai));
       Toast.show({ type: 'success', text1: 'Task created on board' });
     } catch {
       Toast.show({ type: 'error', text1: 'Failed to push to board' });
     }
   };
+
+  if (!isCreate && loading) return <LoadingSpinner fullscreen />;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

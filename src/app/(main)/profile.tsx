@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, Pressable, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Toast } from '@/components/AcadexToast';
 
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
@@ -10,6 +11,7 @@ import { ProjectCard } from '@/components/ProjectCard';
 import { SectionHeader } from '@/components/SectionHeader';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuthStore } from '@/stores/auth.store';
+import { useProjectStore } from '@/stores/project.store';
 import { useUserProjects } from '@/hooks/use-user-projects';
 import { signOutUser } from '@/services/auth.service';
 import { BG, TEXT, ACCENT, BORDER, SEMANTIC } from '@/constants/colors';
@@ -25,22 +27,42 @@ const ROLE_COLORS = {
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, profile, signOut } = useAuthStore();
+  const clearActiveProject = useProjectStore((state) => state.clearActiveProject);
   const { projects } = useUserProjects(user?.uid);
+  const [signingOut, setSigningOut] = useState(false);
 
   if (!profile) return <LoadingSpinner fullscreen />;
 
   const roleColor = ROLE_COLORS[profile.roleLabel] ?? ROLE_COLORS.Student;
 
+  const performSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOutUser();
+      clearActiveProject();
+      signOut();
+      router.replace('/(auth)/login');
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to sign out' });
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   const handleSignOut = () => {
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm('Are you sure you want to sign out?')) {
+        void performSignOut();
+      }
+      return;
+    }
+
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign out',
         style: 'destructive',
-        onPress: async () => {
-          await signOutUser();
-          signOut();
-        },
+        onPress: () => void performSignOut(),
       },
     ]);
   };
@@ -81,9 +103,9 @@ export default function ProfileScreen() {
         ))}
 
         {/* Sign out */}
-        <Pressable onPress={handleSignOut} style={styles.signOutBtn}>
+        <Pressable onPress={handleSignOut} disabled={signingOut} style={[styles.signOutBtn, signingOut && styles.signOutBtnDisabled]}>
           <Ionicons name="log-out-outline" size={18} color={SEMANTIC.red} />
-          <Text style={styles.signOutText}>Sign out</Text>
+          <Text style={styles.signOutText}>{signingOut ? 'Signing out...' : 'Sign out'}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -136,5 +158,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     justifyContent: 'center',
   },
+  signOutBtnDisabled: { opacity: 0.6 },
   signOutText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: SEMANTIC.red },
 });

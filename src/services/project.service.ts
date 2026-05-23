@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  type Unsubscribe,
 } from 'firebase/firestore';
 
 import { db } from '@/config/firebase';
@@ -125,9 +126,14 @@ export async function getProject(projectId: string): Promise<Project> {
 
 export async function getProjectsByUser(userId: string): Promise<Project[]> {
   try {
-    const q = query(collection(db, 'projects'), where('memberIds', 'array-contains', userId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((item) => mapProject(item.id, item.data()));
+    const userSnapshot = await getDoc(doc(db, 'users', userId));
+    const projectIds = userSnapshot.exists() ? userSnapshot.data().projectIds ?? [] : [];
+    const snapshots = await Promise.all(
+      projectIds.map((projectId: string) => getDoc(doc(db, 'projects', projectId))),
+    );
+    return snapshots
+      .filter((snapshot) => snapshot.exists())
+      .map((snapshot) => mapProject(snapshot.id, snapshot.data()));
   } catch (error: any) {
     throw new Error(`Failed to load projects: ${error.message}`);
   }
@@ -231,13 +237,67 @@ export function listenToProject(projectId: string, callback: (project: Project |
   );
 }
 
-export function listenToUserProjects(userId: string, callback: (projects: Project[]) => void): () => void {
-  const q = query(collection(db, 'projects'), where('memberIds', 'array-contains', userId));
-  return onSnapshot(
-    q,
-    (snapshot) => callback(snapshot.docs.map((item) => mapProject(item.id, item.data()))),
+export function listenToUserProjects(
+  userId: string,
+  callback: (projects: Project[]) => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const projectUnsubscribes = new Map<string, Unsubscribe>();
+  const projects = new Map<string, Project>();
+
+  const emitProjects = () => {
+    callback(Array.from(projects.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+  };
+
+  const unsubscribeUser = onSnapshot(
+    doc(db, 'users', userId),
+    (snapshot) => {
+      const projectIds: string[] = snapshot.exists() ? snapshot.data().projectIds ?? [] : [];
+      const activeProjectIds = new Set(projectIds);
+
+      for (const [projectId, unsubscribe] of projectUnsubscribes) {
+        if (!activeProjectIds.has(projectId)) {
+          unsubscribe();
+          projectUnsubscribes.delete(projectId);
+          projects.delete(projectId);
+        }
+      }
+
+      for (const projectId of projectIds) {
+        if (projectUnsubscribes.has(projectId)) continue;
+
+        const unsubscribeProject = onSnapshot(
+          doc(db, 'projects', projectId),
+          (projectSnapshot) => {
+            if (projectSnapshot.exists()) {
+              projects.set(projectSnapshot.id, mapProject(projectSnapshot.id, projectSnapshot.data()));
+            } else {
+              projects.delete(projectId);
+            }
+            emitProjects();
+          },
+          () => {
+            projectUnsubscribes.get(projectId)?.();
+            projectUnsubscribes.delete(projectId);
+            projects.delete(projectId);
+            emitProjects();
+          },
+        );
+        projectUnsubscribes.set(projectId, unsubscribeProject);
+      }
+
+      if (projectIds.length === 0) emitProjects();
+    },
     (error) => {
-      throw new Error(`Failed to listen to user projects: ${error.message}`);
+      onError?.(new Error(`Failed to listen to user projects: ${error.message}`));
     },
   );
+
+  return () => {
+    unsubscribeUser();
+    for (const unsubscribe of projectUnsubscribes.values()) {
+      unsubscribe();
+    }
+    projectUnsubscribes.clear();
+  };
 }

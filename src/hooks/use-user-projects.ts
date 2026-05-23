@@ -23,6 +23,11 @@ export function useUserProjects(userId: string | undefined) {
       setLocalProjects(nextProjects);
       setProjects(nextProjects);
       setLoading(false);
+    }, (listenerError) => {
+      setError(listenerError);
+      setLocalProjects([]);
+      setProjects([]);
+      setLoading(false);
     });
 
     return unsubscribe;

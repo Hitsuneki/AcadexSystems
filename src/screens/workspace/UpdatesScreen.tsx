@@ -1,20 +1,33 @@
-import React, { useState } from 'react';
-import { View, FlatList, TextInput, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { Toast } from '@/components/AcadexToast';
-import { Ionicons } from '@expo/vector-icons';
+import { Toast } from "@/components/AcadexToast";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
 
-import { AnnouncementCard } from '@/components/AnnouncementCard';
-import { EmptyState } from '@/components/EmptyState';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { useAuthStore } from '@/stores/auth.store';
-import { useAnnouncements } from '@/hooks/use-announcements';
-import { useProjectMembers } from '@/hooks/use-project-members';
-import { useProjectStore } from '@/stores/project.store';
-import { postAnnouncement, toggleReaction, deleteAnnouncement } from '@/services/announcement.service';
-import { BG, BORDER, TEXT, ACCENT } from '@/constants/colors';
-import { InputDefaults } from '@/constants/theme';
-import { FontFamily, FontSize } from '@/constants/typography';
+import { AnnouncementCard } from "@/components/AnnouncementCard";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EmptyState } from "@/components/EmptyState";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ACCENT, BG, BORDER, TEXT } from "@/constants/colors";
+import { InputDefaults } from "@/constants/theme";
+import { FontFamily } from "@/constants/typography";
+import { useAnnouncements } from "@/hooks/use-announcements";
+import { useProjectMembers } from "@/hooks/use-project-members";
+import {
+  deleteAnnouncement,
+  postAnnouncement,
+  toggleReaction,
+} from "@/services/announcement.service";
+import { useAuthStore } from "@/stores/auth.store";
+import { useProjectStore } from "@/stores/project.store";
 
 interface UpdatesScreenProps {
   projectId: string;
@@ -23,9 +36,10 @@ interface UpdatesScreenProps {
 export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
   const { user } = useAuthStore();
   const { currentProject } = useProjectStore();
-  const { announcements, loading, addAnnouncement, removeAnnouncement, toggleReactionLocal } = useAnnouncements(projectId);
+  const { announcements, loading, toggleReactionLocal } =
+    useAnnouncements(projectId);
   const { members } = useProjectMembers(currentProject?.memberIds);
-  const [body, setBody] = useState('');
+  const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -33,11 +47,10 @@ export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
     if (!body.trim() || !user) return;
     setSending(true);
     try {
-      const ann = await postAnnouncement(projectId, user.uid, body.trim());
-      addAnnouncement(ann);
-      setBody('');
+      await postAnnouncement(projectId, user.uid, body.trim());
+      setBody("");
     } catch {
-      Toast.show({ type: 'error', text1: 'Failed to post' });
+      Toast.show({ type: "error", text1: "Failed to post" });
     } finally {
       setSending(false);
     }
@@ -52,14 +65,16 @@ export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
   const handleDelete = async () => {
     if (!deleteId) return;
     await deleteAnnouncement(deleteId);
-    removeAnnouncement(deleteId);
     setDeleteId(null);
   };
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.container}
+    >
       {/* Post bar */}
       <View style={styles.postBar}>
         <TextInput
@@ -70,8 +85,19 @@ export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
           placeholderTextColor={InputDefaults.placeholderTextColor}
           multiline
         />
-        <Pressable onPress={handlePost} disabled={sending || !body.trim()} style={[styles.sendBtn, (!body.trim() || sending) && styles.sendBtnDisabled]}>
-          {sending ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="send" size={18} color="#FFF" />}
+        <Pressable
+          onPress={handlePost}
+          disabled={sending || !body.trim()}
+          style={[
+            styles.sendBtn,
+            (!body.trim() || sending) && styles.sendBtnDisabled,
+          ]}
+        >
+          {sending ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Ionicons name="send" size={18} color="#FFF" />
+          )}
         </Pressable>
       </View>
 
@@ -88,7 +114,13 @@ export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
           />
         )}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<EmptyState icon="megaphone-outline" title="No announcements" subtitle="Be the first to post an update" />}
+        ListEmptyComponent={
+          <EmptyState
+            icon="megaphone-outline"
+            title="No announcements"
+            subtitle="Be the first to post an update"
+          />
+        }
         showsVerticalScrollIndicator={false}
         inverted={announcements.length > 0}
       />
@@ -109,8 +141,8 @@ export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG.bg0 },
   postBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: 10,
     padding: 12,
     borderBottomWidth: 0.5,
@@ -130,7 +162,14 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.interRegular,
     maxHeight: 120,
   },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: ACCENT.blue, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: ACCENT.blue,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   sendBtnDisabled: { opacity: 0.5 },
   listContent: { padding: 12, flexGrow: 1 },
 });

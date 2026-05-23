@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import type { Note } from '@/types';
+import type { Note } from "@/types";
+import { create } from "zustand";
 
 interface NotesState {
   notesByProject: Record<string, Note[]>;
@@ -11,12 +11,15 @@ interface NotesState {
 export const useNotesStore = create<NotesState>((set) => ({
   notesByProject: {},
   addNote: (projectId, note) =>
-    set((state) => ({
-      notesByProject: {
-        ...state.notesByProject,
-        [projectId]: [note, ...(state.notesByProject[projectId] ?? [])],
-      },
-    })),
+    set((state) => {
+      const existing = state.notesByProject[projectId] ?? [];
+      return {
+        notesByProject: {
+          ...state.notesByProject,
+          [projectId]: [note, ...existing.filter((n) => n.id !== note.id)],
+        },
+      };
+    }),
   updateNote: (projectId, noteId, patch) =>
     set((state) => ({
       notesByProject: {

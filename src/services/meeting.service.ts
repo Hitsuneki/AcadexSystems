@@ -17,6 +17,8 @@ import type { ActionItem, Meeting } from '@/types';
 import { logActivity } from './activity.service';
 import { mapMeeting } from './mappers';
 
+type MeetingActionItemInput = Omit<ActionItem, 'id'> & Partial<Pick<ActionItem, 'id'>>;
+
 export interface CreateMeetingPayload {
   title: string;
   date?: string;
@@ -26,17 +28,17 @@ export interface CreateMeetingPayload {
   agendaItems?: string[];
   decisions?: string;
   notes?: string;
-  actionItems?: Omit<ActionItem, 'id'>[];
+  actionItems?: MeetingActionItemInput[];
 }
 
-function normalizeActionItems(actionItems: Omit<ActionItem, 'id'>[] = []) {
+function normalizeActionItems(actionItems: MeetingActionItemInput[] = []) {
   return actionItems.map((item, index) => ({
-    id: `ai-${Date.now()}-${index}`,
+    id: item.id ?? `ai-${Date.now()}-${index}`,
     body: item.body,
     assignedTo: item.assignedTo ?? '',
     pushedToTaskId: item.pushedToTaskId ?? null,
     status: item.status ?? 'pending',
-    createdAt: new Date(),
+    createdAt: item.createdAt ?? new Date(),
   }));
 }
 
@@ -50,6 +52,7 @@ export async function createMeeting(
 
   try {
     const heldAt = data.heldAt ?? data.date ?? new Date();
+    const actionItems = normalizeActionItems(data.actionItems);
     const meetingRef = await addDoc(collection(db, 'meetings'), {
       projectId,
       title: data.title,
@@ -58,7 +61,7 @@ export async function createMeeting(
       attendeeIds: data.attendeeIds ?? [],
       agendaItems: data.agendaItems ?? [],
       decisions: data.decisions ?? data.notes ?? '',
-      actionItems: normalizeActionItems(data.actionItems),
+      actionItems,
       createdBy: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -70,7 +73,7 @@ export async function createMeeting(
       projectId,
       heldAt,
       decisions: data.decisions ?? data.notes ?? '',
-      actionItems: normalizeActionItems(data.actionItems),
+      actionItems,
       createdBy: userId,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -84,7 +87,8 @@ export async function updateMeeting(meetingId: string, data: Partial<CreateMeeti
   try {
     const payload: Record<string, unknown> = { ...data, updatedAt: serverTimestamp() };
     if (data.date && !data.heldAt) payload.heldAt = new Date(data.date);
-    if (data.notes && !data.decisions) payload.decisions = data.notes;
+    if (data.notes !== undefined && data.decisions === undefined) payload.decisions = data.notes;
+    if (data.actionItems !== undefined) payload.actionItems = normalizeActionItems(data.actionItems);
     delete payload.date;
     delete payload.notes;
     await updateDoc(doc(db, 'meetings', meetingId), payload);
