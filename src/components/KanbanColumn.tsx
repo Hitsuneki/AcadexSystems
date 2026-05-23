@@ -13,6 +13,7 @@ interface KanbanColumnProps {
   title: string;
   tasks: Task[];
   members?: UserProfile[];
+  width: number;
   onTaskPress: (task: Task) => void;
   onDragEnd: (tasks: Task[]) => void;
   onAddTask: () => void;
@@ -25,7 +26,7 @@ const COLUMN_TITLES: Record<ColumnKey, string> = {
   done: 'Done',
 };
 
-export function KanbanColumn({ columnKey, title, tasks, members = [], onTaskPress, onDragEnd, onAddTask }: KanbanColumnProps) {
+export function KanbanColumn({ columnKey, title, tasks, members = [], width, onTaskPress, onDragEnd, onAddTask }: KanbanColumnProps) {
   const color = COLUMN_COLORS[columnKey];
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Task>) => (
@@ -37,7 +38,7 @@ export function KanbanColumn({ columnKey, title, tasks, members = [], onTaskPres
   );
 
   return (
-    <View style={styles.column}>
+    <View style={[styles.column, { width }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -74,7 +75,6 @@ export function KanbanColumn({ columnKey, title, tasks, members = [], onTaskPres
 
 const styles = StyleSheet.create({
   column: {
-    width: 260,
     backgroundColor: BG.bg1,
     borderRadius: 10,
     borderWidth: 0.5,
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginRight: 12,
     maxHeight: '100%',
+    minHeight: 180,
   },
   header: {
     flexDirection: 'row',
@@ -89,12 +90,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   title: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.interSemiBold,
     color: TEXT.primary,
+    flexShrink: 1,
   },
   countBadge: {
     backgroundColor: 'rgba(255,255,255,0.07)',

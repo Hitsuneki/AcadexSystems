@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Image, View, Text, Pressable, StyleSheet } from 'react-native';
 import { BG, BORDER, TEXT, SEMANTIC } from '@/constants/colors';
 import { CardDefaults } from '@/constants/theme';
 import { FontFamily, FontSize } from '@/constants/typography';
@@ -21,6 +21,7 @@ export function TaskCard({ task, members = [], onPress }: TaskCardProps) {
   const extra = assignees.length - visibleAssignees.length;
   const checklist = task.checklist ?? [];
   const completedItems = checklist.filter((i) => i.isCompleted).length;
+  const imageUrl = task.attachmentUrls?.find((url) => /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url));
 
   return (
     <Pressable
@@ -30,6 +31,8 @@ export function TaskCard({ task, members = [], onPress }: TaskCardProps) {
         <Text style={styles.title} numberOfLines={2}>{task.title}</Text>
         <PriorityBadge priority={task.priority} />
       </View>
+
+      {imageUrl && <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />}
 
       {task.dueDate && (
         <Text style={[styles.dueDate, overdue && styles.overdue]}>
@@ -78,6 +81,12 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.interMedium,
     color: TEXT.primary,
     lineHeight: 19,
+  },
+  previewImage: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 8,
+    backgroundColor: BG.bg2,
   },
   dueDate: {
     fontSize: FontSize.sm,

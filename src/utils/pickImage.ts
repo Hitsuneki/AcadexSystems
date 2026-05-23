@@ -43,3 +43,32 @@ export async function pickProfileImage(): Promise<PickedImage | null> {
     mimeType: asset.mimeType ?? 'image/jpeg',
   };
 }
+
+/** Request library access and pick a task attachment image without cropping. */
+export async function pickTaskImage(): Promise<(PickedImage & { fileName: string; fileSize: number }) | null> {
+  if (Platform.OS !== 'web') {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      throw new Error('Photo library access is required to choose a task image.');
+    }
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: false,
+    quality: 0.9,
+  });
+
+  if (result.canceled || !result.assets?.[0]) {
+    return null;
+  }
+
+  const asset = result.assets[0];
+  const mimeType = asset.mimeType ?? 'image/jpeg';
+  return {
+    uri: asset.uri,
+    mimeType,
+    fileName: asset.fileName ?? `task-image-${Date.now()}.${extensionForMime(mimeType)}`,
+    fileSize: asset.fileSize ?? 0,
+  };
+}

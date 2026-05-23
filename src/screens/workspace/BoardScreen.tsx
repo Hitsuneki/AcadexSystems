@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { KanbanColumn } from '@/components/KanbanColumn';
@@ -28,6 +28,7 @@ const COLUMN_TITLES: Record<ColumnKey, string> = {
 
 export default function BoardScreen({ projectId }: BoardScreenProps) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { user } = useAuthStore();
   const { currentProject } = useProjectStore();
   const { columns, loading } = useTasks(projectId);
@@ -37,6 +38,12 @@ export default function BoardScreen({ projectId }: BoardScreenProps) {
   const [localColumns, setLocalColumns] = useState<typeof columns | null>(null);
 
   const displayColumns = localColumns ?? columns;
+  const boardPadding = 24;
+  const columnGap = 12;
+  const isWideBoard = width >= 1100;
+  const columnWidth = isWideBoard
+    ? Math.floor((width - boardPadding - columnGap * (COLUMN_KEYS.length - 1)) / COLUMN_KEYS.length)
+    : Math.min(Math.max(width - boardPadding - 8, 280), 340);
 
   const handleDragEnd = async (col: ColumnKey, newTasks: Task[]) => {
     const previousColumns = localColumns ?? columns;
@@ -71,6 +78,7 @@ export default function BoardScreen({ projectId }: BoardScreenProps) {
             title={COLUMN_TITLES[col]}
             tasks={displayColumns[col]}
             members={members}
+            width={columnWidth}
             onTaskPress={(task) => router.push(`/project/${projectId}/task/${task.id}`)}
             onDragEnd={(tasks) => handleDragEnd(col, tasks)}
             onAddTask={() => handleOpenCreate(col)}
