@@ -1,5 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, TextInput, ActivityIndicator, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Linking,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -8,21 +19,48 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '@/components/Avatar';
 import { PriorityBadge } from '@/components/PriorityBadge';
-import { FileCard } from '@/components/FileCard';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { BG, BORDER, TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
-import { CardDefaults, InputDefaults } from '@/constants/theme';
+import { InputDefaults } from '@/constants/theme';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { formatShortDate, isOverdue } from '@/utils/date';
 import { useTasks } from '@/hooks/use-tasks';
 import { useProjectMembers } from '@/hooks/use-project-members';
 import { useProjectStore } from '@/stores/project.store';
 import { useFiles } from '@/hooks/use-files';
-import { completeTask, cancelTask, updateTask, toggleChecklistItem, addChecklistItem, attachFileToTask } from '@/services/task.service';
-import { uploadFile } from '@/services/storage.service';
+import {
+  completeTask,
+  cancelTask,
+  updateTask,
+  toggleChecklistItem,
+  addChecklistItem,
+  attachFileToTask,
+  assignMembers,
+  moveTask,
+} from '@/services/task.service';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+import { uploadFile } from '@/services/file.service';
 import { useAuthStore } from '@/stores/auth.store';
-import type { Task, TaskChecklist } from '@/types';
+import type { TaskStatus } from '@/types';
+
+const COLUMN_OPTIONS: { key: TaskStatus; label: string }[] = [
+  { key: 'backlog', label: 'Backlog' },
+  { key: 'inProgress', label: 'In Progress' },
+  { key: 'review', label: 'Review' },
+  { key: 'done', label: 'Done' },
+];
+
+function fileNameFromUrl(url: string): string {
+  try {
+    const segment = decodeURIComponent(url.split('/').pop() ?? 'Attachment');
+    const parts = segment.split('-');
+    return parts.length > 2 ? parts.slice(2).join('-') : segment;
+  } catch {
+    return 'Attachment';
+  }
+}
 
 export default function TaskDetailScreen() {
   const { id: projectId, taskId } = useLocalSearchParams<{ id: string; taskId: string }>();
@@ -39,23 +77,42 @@ export default function TaskDetailScreen() {
   const [description, setDescription] = useState(task?.description ?? '');
   const [editingDesc, setEditingDesc] = useState(false);
   const [newCheckItem, setNewCheckItem] = useState('');
-  const [checklist, setChecklist] = useState<TaskChecklist[]>(task?.checklist ?? []);
+  const [addingCheck, setAddingCheck] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [movingColumn, setMovingColumn] = useState(false);
+  const [savingAssignees, setSavingAssignees] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>(task?.assigneeIds ?? []);
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
       setDescription(task.description ?? '');
-      setChecklist(task.checklist ?? []);
+      setSelectedAssigneeIds(task.assigneeIds);
     }
-  }, [task]);
+  }, [task?.id, task?.title, task?.description, task?.assigneeIds]);
+
+  const checklist = task?.checklist ?? [];
+
+  const taskFiles = useMemo(() => {
+    const urls = task?.attachmentUrls ?? [];
+    return urls.map((url) => {
+      const matched = files.find((f) => f.storageUrl === url);
+      return {
+        url,
+        name: matched?.fileName ?? fileNameFromUrl(url),
+        fileType: matched?.fileType ?? 'txt',
+      };
+    });
+  }, [task?.attachmentUrls, files]);
 
   const handleComplete = async () => {
+    if (!user?.uid || !projectId) return;
     setCompleting(true);
     try {
-      await completeTask(taskId);
+      await completeTask(taskId, user.uid, projectId);
       Toast.show({ type: 'success', text1: 'Task completed!' });
       router.back();
     } catch {
@@ -68,7 +125,7 @@ export default function TaskDetailScreen() {
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      await cancelTask(taskId);
+      await cancelTask(taskId, user?.uid, projectId);
       setShowCancel(false);
       router.back();
     } finally {
@@ -77,15 +134,21 @@ export default function TaskDetailScreen() {
   };
 
   const handleToggleCheck = async (itemId: string) => {
-    setChecklist((prev) => prev.map((i) => i.id === itemId ? { ...i, isCompleted: !i.isCompleted } : i));
     await toggleChecklistItem(taskId, itemId);
   };
 
   const handleAddCheck = async () => {
-    if (!newCheckItem.trim()) return;
-    const item = await addChecklistItem(taskId, newCheckItem.trim());
-    setChecklist((prev) => [...prev, item]);
-    setNewCheckItem('');
+    const label = newCheckItem.trim();
+    if (!label || addingCheck) return;
+    setAddingCheck(true);
+    try {
+      await addChecklistItem(taskId, label);
+      setNewCheckItem('');
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to add checklist item' });
+    } finally {
+      setAddingCheck(false);
+    }
   };
 
   const handleBlurTitle = async () => {
@@ -101,15 +164,72 @@ export default function TaskDetailScreen() {
     }
   };
 
+  const handleMoveColumn = async (column: TaskStatus) => {
+    if (!task || task.status === column || !user?.uid) return;
+    setMovingColumn(true);
+    try {
+      await moveTask(taskId, task.column ?? task.status, column, user.uid, projectId);
+      Toast.show({ type: 'success', text1: `Moved to ${COLUMN_OPTIONS.find((c) => c.key === column)?.label}` });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to move task' });
+    } finally {
+      setMovingColumn(false);
+    }
+  };
+
+  const toggleAssignee = async (memberId: string) => {
+    const next = selectedAssigneeIds.includes(memberId)
+      ? selectedAssigneeIds.filter((id) => id !== memberId)
+      : [...selectedAssigneeIds, memberId];
+    setSelectedAssigneeIds(next);
+    setSavingAssignees(true);
+    try {
+      await assignMembers(taskId, next);
+    } catch {
+      setSelectedAssigneeIds(task?.assigneeIds ?? []);
+      Toast.show({ type: 'error', text1: 'Failed to update assignees' });
+    } finally {
+      setSavingAssignees(false);
+    }
+  };
+
+  const handleUploadFile = async () => {
+    if (!user?.uid || !projectId) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      setUploadingFile(true);
+      const fileId = await uploadFile(
+        projectId,
+        user.uid,
+        asset.uri,
+        asset.name,
+        asset.mimeType ?? 'application/octet-stream',
+        asset.size ?? 0,
+      );
+      const snapshot = await getDoc(doc(db, 'files', fileId));
+      const url = snapshot.data()?.storageUrl as string | undefined;
+      if (url) {
+        await attachFileToTask(taskId, url);
+      }
+      Toast.show({ type: 'success', text1: 'File attached' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to upload file' });
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   if (!task) return <LoadingSpinner fullscreen />;
 
-  const assignees = members.filter((m) => task.assigneeIds.includes(m.id));
+  const assignees = members.filter((m) => selectedAssigneeIds.includes(m.id));
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="arrow-back" size={20} color={TEXT.secondary} />
@@ -124,7 +244,6 @@ export default function TaskDetailScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          {/* Status row */}
           <View style={styles.metaRow}>
             <PriorityBadge priority={task.priority} />
             {task.dueDate && (
@@ -134,17 +253,34 @@ export default function TaskDetailScreen() {
             )}
           </View>
 
-          {/* Actions */}
-          <Pressable onPress={handleComplete} disabled={completing} style={[styles.completeBtn, completing && styles.btnDisabled]}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Status</Text>
+            <View style={styles.columnRow}>
+              {COLUMN_OPTIONS.map((col) => {
+                const active = task.status === col.key;
+                return (
+                  <Pressable
+                    key={col.key}
+                    disabled={movingColumn}
+                    onPress={() => handleMoveColumn(col.key)}
+                    style={[styles.columnChip, active && styles.columnChipActive]}
+                  >
+                    <Text style={[styles.columnChipText, active && styles.columnChipTextActive]}>{col.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <Pressable onPress={handleComplete} disabled={completing || task.status === 'done'} style={[styles.completeBtn, (completing || task.status === 'done') && styles.btnDisabled]}>
             {completing ? <ActivityIndicator size="small" color="#FFF" /> : (
               <>
                 <Ionicons name="checkmark-circle" size={18} color="#FFF" />
-                <Text style={styles.completeBtnText}>Complete task</Text>
+                <Text style={styles.completeBtnText}>{task.status === 'done' ? 'Completed' : 'Mark complete'}</Text>
               </>
             )}
           </Pressable>
 
-          {/* Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
             {editingDesc ? (
@@ -167,22 +303,65 @@ export default function TaskDetailScreen() {
             )}
           </View>
 
-          {/* Assignees */}
-          {assignees.length > 0 && (
-            <View style={styles.section}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Assignees</Text>
-              <View style={styles.assigneesRow}>
-                {assignees.map((m) => (
-                  <View key={m.id} style={styles.assignee}>
-                    <Avatar uri={m.avatarUri} name={m.fullName} size="sm" />
-                    <Text style={styles.assigneeName}>{m.fullName.split(' ')[0]}</Text>
-                  </View>
-                ))}
-              </View>
+              {savingAssignees && <ActivityIndicator size="small" color={ACCENT.blue} />}
             </View>
-          )}
+            {members.length === 0 ? (
+              <Text style={styles.hint}>No project members loaded</Text>
+            ) : (
+              <View style={styles.memberPickRow}>
+                {members.map((m) => {
+                  const selected = selectedAssigneeIds.includes(m.id);
+                  return (
+                    <Pressable
+                      key={m.id}
+                      onPress={() => toggleAssignee(m.id)}
+                      style={[styles.memberChip, selected && styles.memberChipSelected]}
+                    >
+                      <Avatar uri={m.avatarUri} name={m.fullName} size="sm" />
+                      <Text style={[styles.memberChipText, selected && styles.memberChipTextSelected]} numberOfLines={1}>
+                        {m.id === user?.uid ? 'You' : m.fullName.split(' ')[0]}
+                      </Text>
+                      {selected && <Ionicons name="checkmark" size={14} color={ACCENT.blue} />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+            {assignees.length > 0 && (
+              <Text style={styles.hint}>{assignees.length} assigned — visible on My Tasks</Text>
+            )}
+          </View>
 
-          {/* Checklist */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Attachments</Text>
+              <Pressable onPress={handleUploadFile} disabled={uploadingFile} style={styles.attachBtn}>
+                {uploadingFile ? (
+                  <ActivityIndicator size="small" color={ACCENT.blue} />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload-outline" size={16} color={ACCENT.blue} />
+                    <Text style={styles.attachBtnText}>Upload</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+            {taskFiles.length === 0 ? (
+              <Text style={styles.hint}>No files attached yet</Text>
+            ) : (
+              taskFiles.map((file) => (
+                <Pressable key={file.url} onPress={() => Linking.openURL(file.url)} style={styles.fileRow}>
+                  <Ionicons name="document-outline" size={20} color={ACCENT.blue} />
+                  <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
+                  <Ionicons name="open-outline" size={16} color={TEXT.muted} />
+                </Pressable>
+              ))
+            )}
+          </View>
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Checklist {checklist.length > 0 ? `(${checklist.filter((i) => i.isCompleted).length}/${checklist.length})` : ''}
@@ -201,14 +380,14 @@ export default function TaskDetailScreen() {
                 placeholder="Add item..."
                 placeholderTextColor={InputDefaults.placeholderTextColor}
                 onSubmitEditing={handleAddCheck}
+                editable={!addingCheck}
               />
-              <Pressable onPress={handleAddCheck} style={styles.addCheckBtn}>
-                <Ionicons name="add" size={18} color={ACCENT.blue} />
+              <Pressable onPress={handleAddCheck} disabled={addingCheck} style={styles.addCheckBtn}>
+                {addingCheck ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Ionicons name="add" size={18} color={ACCENT.blue} />}
               </Pressable>
             </View>
           </View>
 
-          {/* Danger zone */}
           <Pressable onPress={() => setShowCancel(true)} style={styles.cancelBtn}>
             <Text style={styles.cancelBtnText}>Cancel task</Text>
           </Pressable>
@@ -237,21 +416,61 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   dueDate: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
   overdue: { color: SEMANTIC.red },
+  section: { gap: 10 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionTitle: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: TEXT.secondary, textTransform: 'uppercase', letterSpacing: 0.8 },
+  columnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  columnChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: BORDER.default,
+    backgroundColor: BG.bg2,
+  },
+  columnChipActive: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
+  columnChipText: { fontSize: FontSize.xs, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
+  columnChipTextActive: { color: ACCENT.blue },
   completeBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: SEMANTIC.green, borderRadius: 8, paddingVertical: 13, minHeight: 48,
   },
   btnDisabled: { opacity: 0.6 },
   completeBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFF' },
-  section: { gap: 10 },
-  sectionTitle: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: TEXT.secondary, textTransform: 'uppercase', letterSpacing: 0.8 },
   descInput: { backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.focusedBorderColor, color: TEXT.primary, padding: 12, fontSize: FontSize.md, fontFamily: FontFamily.interRegular, minHeight: 80 },
   descDisplay: { padding: 12, backgroundColor: BG.bg2, borderRadius: 8, minHeight: 60, justifyContent: 'center' },
   descText: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.secondary, lineHeight: 20 },
   descPlaceholder: { color: TEXT.muted },
-  assigneesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  assignee: { alignItems: 'center', gap: 4 },
-  assigneeName: { fontSize: FontSize.xs, fontFamily: FontFamily.interRegular, color: TEXT.secondary },
+  hint: { fontSize: FontSize.sm, fontFamily: FontFamily.interRegular, color: TEXT.muted },
+  memberPickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  memberChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: BORDER.default,
+    backgroundColor: BG.bg2,
+    maxWidth: '48%',
+  },
+  memberChipSelected: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
+  memberChipText: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary, flexShrink: 1 },
+  memberChipTextSelected: { color: ACCENT.blue },
+  attachBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4 },
+  attachBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
+  fileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    backgroundColor: BG.bg2,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: BORDER.default,
+  },
+  fileName: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
   checkItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkItemText: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.primary },
   checkItemDone: { textDecorationLine: 'line-through', color: TEXT.muted },

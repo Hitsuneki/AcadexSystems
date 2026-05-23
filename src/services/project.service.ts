@@ -31,8 +31,20 @@ function generateInviteCode(): string {
   return Array.from({ length: 6 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
 }
 
+async function generateUniqueInviteCode(): Promise<string> {
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const code = generateInviteCode();
+    const existing = await getDocs(
+      query(collection(db, 'projects'), where('inviteCode', '==', code)),
+    );
+    if (existing.empty) return code;
+  }
+  throw new Error('Could not generate a unique project code');
+}
+
 export async function createProject(userId: string, data: CreateProjectPayload): Promise<Project> {
   try {
+    const inviteCode = await generateUniqueInviteCode();
     const projectRef = await addDoc(collection(db, 'projects'), {
       name: data.name,
       description: data.description ?? '',
@@ -41,7 +53,7 @@ export async function createProject(userId: string, data: CreateProjectPayload):
       coverColor: data.coverColor ?? '#2563EB',
       createdBy: userId,
       memberIds: [userId],
-      inviteCode: generateInviteCode(),
+      inviteCode,
       status: 'active',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -97,6 +109,17 @@ export async function joinProjectByCode(
   } catch (error: any) {
     if (error.message === 'Already a member' || error.message === 'Invalid invite code') throw error;
     throw new Error(`Failed to join project: ${error.message}`);
+  }
+}
+
+export async function getProject(projectId: string): Promise<Project> {
+  try {
+    const snapshot = await getDoc(doc(db, 'projects', projectId));
+    if (!snapshot.exists()) throw new Error('Project not found');
+    return mapProject(snapshot.id, snapshot.data());
+  } catch (error: any) {
+    if (error.message === 'Project not found') throw error;
+    throw new Error(`Failed to load project: ${error.message}`);
   }
 }
 

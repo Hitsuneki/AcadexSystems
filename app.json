@@ -41,7 +41,8 @@
         {
           "photosPermission": "Allow ACADEX to access your photos for your profile picture."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

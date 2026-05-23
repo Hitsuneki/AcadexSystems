@@ -14,6 +14,7 @@ import {
 
 import { db } from '@/config/firebase';
 import type { Priority, Task, TaskChecklist, TaskStatus } from '@/types';
+import { uniqueId } from '@/utils/id';
 import { logActivity } from './activity.service';
 import { COLUMN_LABELS, mapTask, toColumnLabel } from './mappers';
 
@@ -214,7 +215,7 @@ export async function toggleChecklistItem(taskId: string, itemId: string): Promi
 }
 
 export async function addChecklistItem(taskId: string, label: string): Promise<TaskChecklist> {
-  const item = { id: `chk-${Date.now()}`, text: label, label, isCompleted: false, isDone: false };
+  const item = { id: uniqueId('chk'), text: label, label, isCompleted: false, isDone: false };
   try {
     const snapshot = await getDoc(doc(db, 'tasks', taskId));
     if (!snapshot.exists()) throw new Error('Task not found');
@@ -240,6 +241,14 @@ export function listenToProjectTasks(projectId: string, callback: (tasks: Task[]
   );
 }
 
+function groupTasksByProject(docs: { id: string; data: () => Record<string, unknown> }[]): Record<string, Task[]> {
+  return docs.reduce<Record<string, Task[]>>((groups, item) => {
+    const task = mapTask(item.id, item.data());
+    groups[task.projectId] = [...(groups[task.projectId] ?? []), task];
+    return groups;
+  }, {});
+}
+
 export async function getTasksByAssignee(userId: string): Promise<Record<string, Task[]>> {
   try {
     const q = query(
@@ -248,14 +257,27 @@ export async function getTasksByAssignee(userId: string): Promise<Record<string,
       where('status', '==', 'active'),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.reduce<Record<string, Task[]>>((groups, item) => {
-      const task = mapTask(item.id, item.data());
-      groups[task.projectId] = [...(groups[task.projectId] ?? []), task];
-      return groups;
-    }, {});
+    return groupTasksByProject(snapshot.docs);
   } catch (error: any) {
     throw new Error(`Failed to load assigned tasks: ${error.message}`);
   }
+}
+
+export function listenToAssigneeTasks(
+  userId: string,
+  callback: (tasks: Record<string, Task[]>) => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const q = query(
+    collection(db, 'tasks'),
+    where('assigneeIds', 'array-contains', userId),
+    where('status', '==', 'active'),
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => callback(groupTasksByProject(snapshot.docs)),
+    (error) => onError?.(new Error(`Failed to listen to assigned tasks: ${error.message}`)),
+  );
 }
 
 export async function pushActionItemToBoard(

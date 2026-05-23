@@ -45,7 +45,11 @@ export function CreateProjectSheet({ visible, onClose, userId, onCreated }: Crea
       onCreated(project);
       onClose();
       setName(''); setDescription(''); setSubjectTag('');
-      Toast.show({ type: 'success', text1: 'Project created!' });
+      Toast.show({
+        type: 'success',
+        text1: 'Project created!',
+        text2: `Share code: ${project.inviteCode}`,
+      });
     } catch {
       Toast.show({ type: 'error', text1: 'Failed to create project' });
     } finally {

@@ -56,9 +56,9 @@ export default function HomeScreen() {
           <EmptyState
             icon="layers-outline"
             title="No projects yet"
-            subtitle="Create or join a project to get started"
-            action="Create project"
-            onAction={() => setActiveSheet('create')}
+            subtitle="Enter an invite code from your team to join a workspace"
+            action="Join with code"
+            onAction={() => setActiveSheet('join')}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -66,11 +66,11 @@ export default function HomeScreen() {
 
       {/* FAB */}
       <View style={styles.fabArea}>
-        <Pressable onPress={() => setActiveSheet('join')} style={styles.joinLink}>
-          <Text style={styles.joinLinkText}>Join a project</Text>
+        <Pressable onPress={() => setActiveSheet('create')} style={styles.joinLink}>
+          <Text style={styles.joinLinkText}>New project</Text>
         </Pressable>
-        <Pressable onPress={() => setActiveSheet('create')} style={styles.fab}>
-          <Ionicons name="add" size={26} color="#FFFFFF" />
+        <Pressable onPress={() => setActiveSheet('join')} style={styles.fab}>
+          <Ionicons name="enter-outline" size={24} color="#FFFFFF" />
         </Pressable>
       </View>
 

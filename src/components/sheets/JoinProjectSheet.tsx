@@ -28,7 +28,7 @@ export function JoinProjectSheet({ visible, onClose, userId, onJoined }: JoinPro
     setError(null);
     setLoading(true);
     try {
-      const project = await joinProjectByCode(userId, code.trim().toUpperCase());
+      const project = await joinProjectByCode(code.trim().toUpperCase(), userId);
       onJoined(project);
       onClose();
       setCode('');

@@ -17,6 +17,7 @@ const FILTERS: { label: string; value: TaskStatus | 'all' }[] = [
   { label: 'Backlog', value: 'backlog' },
   { label: 'In Progress', value: 'inProgress' },
   { label: 'Review', value: 'review' },
+  { label: 'Done', value: 'done' },
 ];
 
 export default function MyTasksScreen() {
