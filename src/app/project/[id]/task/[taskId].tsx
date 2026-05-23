@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,6 +44,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { uploadFile } from '@/services/file.service';
 import { useAuthStore } from '@/stores/auth.store';
+import { pickTaskImage } from '@/utils/pickImage';
 import type { TaskStatus } from '@/types';
 
 const COLUMN_OPTIONS: { key: TaskStatus; label: string }[] = [
@@ -60,6 +62,10 @@ function fileNameFromUrl(url: string): string {
   } catch {
     return 'Attachment';
   }
+}
+
+function isImageUrl(url: string): boolean {
+  return /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url);
 }
 
 export default function TaskDetailScreen() {
@@ -107,6 +113,8 @@ export default function TaskDetailScreen() {
       };
     });
   }, [task?.attachmentUrls, files]);
+
+  const imageFiles = taskFiles.filter((file) => isImageUrl(file.url));
 
   const handleComplete = async () => {
     if (!user?.uid || !projectId) return;
@@ -217,6 +225,34 @@ export default function TaskDetailScreen() {
       Toast.show({ type: 'success', text1: 'File attached' });
     } catch {
       Toast.show({ type: 'error', text1: 'Failed to upload file' });
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleUploadImage = async () => {
+    if (!user?.uid || !projectId) return;
+    try {
+      const image = await pickTaskImage();
+      if (!image) return;
+
+      setUploadingFile(true);
+      const fileId = await uploadFile(
+        projectId,
+        user.uid,
+        image.uri,
+        image.fileName,
+        image.mimeType,
+        image.fileSize,
+      );
+      const snapshot = await getDoc(doc(db, 'files', fileId));
+      const url = snapshot.data()?.storageUrl as string | undefined;
+      if (url) {
+        await attachFileToTask(taskId, url);
+      }
+      Toast.show({ type: 'success', text1: 'Image attached' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to upload image' });
     } finally {
       setUploadingFile(false);
     }
@@ -338,27 +374,39 @@ export default function TaskDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Attachments</Text>
+              {uploadingFile && <ActivityIndicator size="small" color={ACCENT.blue} />}
+            </View>
+            <View style={styles.attachmentActions}>
+              <Pressable onPress={handleUploadImage} disabled={uploadingFile} style={styles.attachBtn}>
+                <Ionicons name="image-outline" size={16} color={ACCENT.blue} />
+                <Text style={styles.attachBtnText}>Image</Text>
+              </Pressable>
               <Pressable onPress={handleUploadFile} disabled={uploadingFile} style={styles.attachBtn}>
-                {uploadingFile ? (
-                  <ActivityIndicator size="small" color={ACCENT.blue} />
-                ) : (
-                  <>
-                    <Ionicons name="cloud-upload-outline" size={16} color={ACCENT.blue} />
-                    <Text style={styles.attachBtnText}>Upload</Text>
-                  </>
-                )}
+                <Ionicons name="cloud-upload-outline" size={16} color={ACCENT.blue} />
+                <Text style={styles.attachBtnText}>File</Text>
               </Pressable>
             </View>
             {taskFiles.length === 0 ? (
               <Text style={styles.hint}>No files attached yet</Text>
             ) : (
-              taskFiles.map((file) => (
-                <Pressable key={file.url} onPress={() => Linking.openURL(file.url)} style={styles.fileRow}>
-                  <Ionicons name="document-outline" size={20} color={ACCENT.blue} />
-                  <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                  <Ionicons name="open-outline" size={16} color={TEXT.muted} />
-                </Pressable>
-              ))
+              <>
+                {imageFiles.length > 0 && (
+                  <View style={styles.imageGrid}>
+                    {imageFiles.map((file) => (
+                      <Pressable key={file.url} onPress={() => Linking.openURL(file.url)} style={styles.imageTile}>
+                        <Image source={{ uri: file.url }} style={styles.imagePreview} resizeMode="cover" />
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                {taskFiles.map((file) => (
+                  <Pressable key={file.url} onPress={() => Linking.openURL(file.url)} style={styles.fileRow}>
+                    <Ionicons name={isImageUrl(file.url) ? 'image-outline' : 'document-outline'} size={20} color={ACCENT.blue} />
+                    <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
+                    <Ionicons name="open-outline" size={16} color={TEXT.muted} />
+                  </Pressable>
+                ))}
+              </>
             )}
           </View>
 
@@ -458,8 +506,29 @@ const styles = StyleSheet.create({
   memberChipSelected: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
   memberChipText: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary, flexShrink: 1 },
   memberChipTextSelected: { color: ACCENT.blue },
-  attachBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4 },
+  attachmentActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  attachBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: ACCENT.blueDim,
+  },
   attachBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
+  imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  imageTile: {
+    width: '31.5%',
+    minWidth: 96,
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: BG.bg2,
+    borderWidth: 0.5,
+    borderColor: BORDER.default,
+  },
+  imagePreview: { width: '100%', height: '100%' },
   fileRow: {
     flexDirection: 'row',
     alignItems: 'center',
