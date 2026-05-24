@@ -21,30 +21,35 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   destructive = false,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = 'CONFIRM',
+  cancelLabel = 'CANCEL',
 }: ConfirmDialogProps) {
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent>
       <View style={styles.overlay}>
-        <View style={styles.dialog}>
-          <Text style={styles.title}>{title}</Text>
-          {message && <Text style={styles.message}>{message}</Text>}
-          <View style={styles.buttons}>
-            <Pressable
-              onPress={onCancel}
-              style={({ pressed }) => [styles.btn, styles.cancelBtn, pressed && styles.pressed]}>
-              <Text style={styles.cancelText}>{cancelLabel}</Text>
+        <Pressable style={styles.backdrop} onPress={onCancel} />
+        
+        <View style={styles.sheet}>
+          <View style={[styles.topLine, destructive && styles.topLineDestructive]} />
+          
+          <View style={styles.header}>
+            <Text style={[styles.title, destructive && styles.titleDestructive]}>
+              // {title.toUpperCase()}
+            </Text>
+            <Pressable hitSlop={12} onPress={onCancel}>
+               <Text style={styles.closeBtn}>×</Text>
             </Pressable>
-            <Pressable
-              onPress={onConfirm}
-              style={({ pressed }) => [
-                styles.btn,
-                destructive ? styles.destructiveBtn : styles.confirmBtn,
-                pressed && styles.pressed,
-              ]}>
-              <Text style={[styles.confirmText, destructive && styles.destructiveText]}>
-                {confirmLabel}
+          </View>
+          
+          {message && <Text style={styles.message}>{message}</Text>}
+          
+          <View style={styles.buttons}>
+            <Pressable onPress={onCancel} style={styles.ghostBtn}>
+              <Text style={styles.ghostText}>[{cancelLabel.toUpperCase()}]</Text>
+            </Pressable>
+            <Pressable onPress={onConfirm} style={styles.ghostBtn}>
+              <Text style={[styles.ghostText, destructive && styles.destructiveText, !destructive && styles.confirmText]}>
+                [{confirmLabel.toUpperCase()}]
               </Text>
             </Pressable>
           </View>
@@ -57,62 +62,70 @@ export function ConfirmDialog({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    justifyContent: 'flex-end',
   },
-  dialog: {
-    backgroundColor: BG.bg2,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: BORDER.default,
-    padding: 20,
-    width: '100%',
-    maxWidth: 320,
-    gap: 12,
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  sheet: {
+    backgroundColor: BG.bg1,
+    borderTopWidth: 1,
+    borderTopColor: BORDER.dim,
+    padding: 24,
+    paddingBottom: 48, // Safe area
+  },
+  topLine: {
+    position: 'absolute',
+    top: -1,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: ACCENT.primary,
+  },
+  topLineDestructive: {
+    backgroundColor: SEMANTIC.red,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: {
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.soraSemiBold,
-    color: TEXT.primary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t1,
   },
-  message: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.secondary,
+  titleDestructive: {
+    color: SEMANTIC.red,
+  },
+  closeBtn: {
+    fontSize: FontSize.heading,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t2,
     lineHeight: 20,
   },
-  buttons: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  btn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
+  message: {
+    fontSize: FontSize.body,
+    fontFamily: FontFamily.interRegular,
+    color: TEXT.t2,
+    lineHeight: 20,
+    marginBottom: 32,
   },
-  pressed: { opacity: 0.75 },
-  cancelBtn: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+  buttons: { 
+    flexDirection: 'row', 
+    justifyContent: 'flex-end',
+    gap: 16,
   },
-  cancelText: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interSemiBold,
-    color: TEXT.secondary,
+  ghostBtn: {
+    paddingVertical: 8,
   },
-  confirmBtn: { backgroundColor: ACCENT.blue },
-  confirmText: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interSemiBold,
-    color: '#FFFFFF',
+  ghostText: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
   },
-  destructiveBtn: {
-    backgroundColor: SEMANTIC.redDim,
-    borderWidth: 1,
-    borderColor: SEMANTIC.redBorder,
-  },
+  confirmText: { color: ACCENT.primary },
   destructiveText: { color: SEMANTIC.red },
 });

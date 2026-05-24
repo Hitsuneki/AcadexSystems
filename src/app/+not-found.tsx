@@ -20,6 +20,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG.bg0, alignItems: 'center', justifyContent: 'center', gap: 12 },
   code: { fontSize: FontSize['3xl'], fontFamily: FontFamily.soraBold, color: TEXT.muted },
   message: { fontSize: FontSize.lg, fontFamily: FontFamily.interRegular, color: TEXT.secondary },
-  btn: { backgroundColor: ACCENT.blue, borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
-  btnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFFFFF' },
+  btn: { backgroundColor: ACCENT.signal, borderRadius: 0, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8 },
+  btnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse, textTransform: 'uppercase' },
 });

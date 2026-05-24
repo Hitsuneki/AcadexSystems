@@ -72,7 +72,7 @@ export default function NoteDetailScreen() {
           </View>
           {editing ? (
             <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
-              {saving ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Text style={styles.saveBtnText}>Save</Text>}
+              {saving ? <ActivityIndicator size="small" color={ACCENT.signal} /> : <Text style={styles.saveBtnText}>Save</Text>}
             </Pressable>
           ) : (
             <Pressable onPress={() => setEditing(true)} style={styles.editBtn}>
@@ -106,9 +106,9 @@ const markdownStyles = {
   heading1: { color: TEXT.primary, fontFamily: FontFamily.soraBold, fontSize: FontSize['2xl'], marginBottom: 8 },
   heading2: { color: TEXT.primary, fontFamily: FontFamily.soraSemiBold, fontSize: FontSize.xl, marginBottom: 6 },
   heading3: { color: TEXT.primary, fontFamily: FontFamily.interSemiBold, fontSize: FontSize.lg, marginBottom: 4 },
-  code_inline: { backgroundColor: BG.bg3, color: ACCENT.blue, fontFamily: FontFamily.interMedium, fontSize: FontSize.sm, paddingHorizontal: 4, borderRadius: 3 },
-  fence: { backgroundColor: BG.bg2, borderRadius: 8, padding: 12 },
-  blockquote: { backgroundColor: BG.bg2, borderLeftWidth: 3, borderLeftColor: ACCENT.blue, paddingLeft: 12 },
+  code_inline: { backgroundColor: BG.bg3, color: ACCENT.signal, fontFamily: FontFamily.interMedium, fontSize: FontSize.sm, paddingHorizontal: 4, borderRadius: 0 },
+  fence: { backgroundColor: BG.bg2, borderRadius: 0, padding: 12 },
+  blockquote: { backgroundColor: BG.bg2, borderLeftWidth: 3, borderLeftColor: ACCENT.signal, paddingLeft: 12 },
   bullet_list: { color: TEXT.secondary },
   ordered_list: { color: TEXT.secondary },
   strong: { color: TEXT.primary, fontFamily: FontFamily.interSemiBold },
@@ -123,9 +123,9 @@ const styles = StyleSheet.create({
   titleText: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
   editedBy: { fontSize: FontSize.sm, fontFamily: FontFamily.interRegular, color: TEXT.muted },
   saveBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
+  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.signal },
   editBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  editBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: ACCENT.blue },
+  editBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: ACCENT.signal },
   bodyInput: { flex: 1, padding: 16, fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.primary, backgroundColor: BG.bg0, lineHeight: 22 },
   markdownContainer: { padding: 16, paddingBottom: 40 },
 });

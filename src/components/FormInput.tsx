@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, type TextInputProps } from 'react-native';
-import { BG, BORDER, TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
+import { TEXT, SEMANTIC, ACCENT } from '@/constants/colors';
 import { InputDefaults } from '@/constants/theme';
 import { FontFamily, FontSize } from '@/constants/typography';
 
 interface FormInputProps extends TextInputProps {
   label?: string;
   error?: string | null;
+  success?: boolean;
 }
 
-export function FormInput({ label, error, style, ...props }: FormInputProps) {
+export function FormInput({ label, error, success, style, ...props }: FormInputProps) {
   const [focused, setFocused] = useState(false);
 
   return (
@@ -19,6 +20,7 @@ export function FormInput({ label, error, style, ...props }: FormInputProps) {
         style={[
           styles.input,
           focused && styles.inputFocused,
+          success && styles.inputSuccess,
           error ? styles.inputError : null,
           style,
         ]}
@@ -27,17 +29,19 @@ export function FormInput({ label, error, style, ...props }: FormInputProps) {
         onBlur={() => setFocused(false)}
         {...props}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <Text style={styles.error}>ERR: {error}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: 6 },
+  wrapper: { marginBottom: 14 },
   label: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interMedium,
-    color: TEXT.secondary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
+    textTransform: 'uppercase',
+    marginBottom: 6,
   },
   input: {
     backgroundColor: InputDefaults.backgroundColor,
@@ -51,10 +55,12 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   inputFocused: { borderColor: InputDefaults.focusedBorderColor },
+  inputSuccess: { borderColor: ACCENT.primary },
   inputError: { borderColor: SEMANTIC.red },
   error: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
+    marginTop: 6,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
     color: SEMANTIC.red,
   },
 });

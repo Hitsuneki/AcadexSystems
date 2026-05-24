@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { BORDER } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
 interface BadgeProps {
@@ -10,7 +11,7 @@ interface BadgeProps {
 
 export function Badge({ label, color, bg }: BadgeProps) {
   return (
-    <View style={[styles.container, { backgroundColor: bg }]}>
+    <View style={[styles.container, { backgroundColor: bg, borderColor: color === 'transparent' ? BORDER.default : color }]}>
       <Text style={[styles.label, { color }]}>{label}</Text>
     </View>
   );
@@ -19,13 +20,15 @@ export function Badge({ label, color, bg }: BadgeProps) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
+    paddingVertical: 4,
+    borderRadius: 0,
+    borderWidth: 1,
     alignSelf: 'flex-start',
   },
   label: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interSemiBold,
-    letterSpacing: 0.2,
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.mono,
+    textTransform: 'uppercase',
+    letterSpacing: 0,
   },
 });

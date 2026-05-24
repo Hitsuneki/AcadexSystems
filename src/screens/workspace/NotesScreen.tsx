@@ -67,7 +67,7 @@ export default function NotesScreen({ projectId }: NotesScreenProps) {
       />
 
       <Pressable onPress={() => setShowPrompt(true)} style={styles.fab}>
-        <Ionicons name="add" size={26} color="#FFFFFF" />
+        <Ionicons name="add" size={26} color={TEXT.inverse} />
       </Pressable>
 
       {/* Title prompt modal */}
@@ -89,7 +89,7 @@ export default function NotesScreen({ projectId }: NotesScreenProps) {
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </Pressable>
               <Pressable onPress={handleCreate} disabled={creating || !noteTitle.trim()} style={[styles.createBtn, (!noteTitle.trim() || creating) && styles.btnDisabled]}>
-                {creating ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.createBtnText}>Create</Text>}
+                {creating ? <ActivityIndicator size="small" color={TEXT.inverse} /> : <Text style={styles.createBtnText}>CREATE</Text>}
               </Pressable>
             </View>
           </View>
@@ -103,18 +103,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG.bg0 },
   listContent: { padding: 16, flexGrow: 1 },
   fab: {
-    position: 'absolute', bottom: 24, right: 20, width: 52, height: 52, borderRadius: 26,
-    backgroundColor: ACCENT.blue, alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 4px 8px rgba(37, 99, 235, 0.4)',
-  },
+    position: 'absolute', bottom: 24, right: 20, width: 52, height: 52, borderRadius: 0,
+    backgroundColor: ACCENT.signal, alignItems: 'center', justifyContent: 'center',
+      },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  prompt: { backgroundColor: BG.bg2, borderRadius: 12, borderWidth: 0.5, borderColor: BORDER.default, padding: 20, width: '100%', maxWidth: 320, gap: 14 },
+  prompt: { backgroundColor: BG.bg2, borderRadius: 0, borderWidth: 0.5, borderColor: BORDER.default, padding: 20, width: '100%', maxWidth: 320, gap: 14 },
   promptTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
   promptInput: { backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.borderColor, color: TEXT.primary, padding: 12, fontSize: InputDefaults.fontSize, fontFamily: FontFamily.interRegular },
   promptButtons: { flexDirection: 'row', gap: 10 },
-  cancelBtn: { flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: BORDER.default, alignItems: 'center' },
+  cancelBtn: { flex: 1, padding: 12, borderRadius: 0, borderWidth: 1, borderColor: BORDER.default, alignItems: 'center' },
   cancelBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: TEXT.secondary },
-  createBtn: { flex: 1, padding: 12, borderRadius: 8, backgroundColor: ACCENT.blue, alignItems: 'center' },
+  createBtn: { flex: 1, padding: 12, borderRadius: 0, backgroundColor: ACCENT.signal, alignItems: 'center' },
   btnDisabled: { opacity: 0.5 },
-  createBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFF' },
+  createBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse },
 });

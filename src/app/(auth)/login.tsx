@@ -1,24 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Toast } from '@/components/AcadexToast';
-
 import { FormInput } from '@/components/FormInput';
-import { BG, TEXT, ACCENT } from '@/constants/colors';
+import { SectionHeader } from '@/components/SectionHeader';
+import { BG, BORDER, TEXT, ACCENT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { validateEmail, validateRequired } from '@/utils/validation';
 import { loginUser } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/auth.store';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [time, setTime] = useState('');
 
   const { setUser } = useAuthStore();
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTime(now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC');
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogin = async () => {
     const emailErr = validateEmail(email);
@@ -31,10 +44,9 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await loginUser({ email: email.trim(), password });
-      // Update auth store so root layout's guard triggers redirect
       setUser({ uid: 'stub-uid', email: email.trim() });
     } catch (err: any) {
-      Toast.show({ type: 'error', text1: 'Sign in failed', text2: err?.message });
+      Toast.show({ type: 'error', text1: 'AUTH FAILED', text2: err?.message });
     } finally {
       setLoading(false);
     }
@@ -42,45 +54,59 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Top bar */}
+      <View style={styles.topBar}>
+        <Text style={styles.topText}>ACADEX v1.0.0</Text>
+        <Text style={styles.topText}>{time}</Text>
+      </View>
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <Text style={styles.wordmark}>ACADEX</Text>
-          <View style={styles.header}>
-            <Text style={styles.heading}>Welcome back</Text>
-            <Text style={styles.sub}>Sign in to your workspace</Text>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.container}>
+            <SectionHeader title="AUTH.LOGIN" />
+            
+            <View style={styles.header}>
+              <Text style={styles.heading}>AUTHENTICATE</Text>
+              <Text style={styles.sub}>Access your workspace.</Text>
+            </View>
+
+            <View style={styles.form}>
+              <FormInput
+                label="ID.EMAIL"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@university.edu"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                error={errors.email}
+              />
+              <View style={styles.passwordWrap}>
+                <FormInput
+                  label="CREDENTIAL.PASSWORD"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  secureTextEntry={!showPassword}
+                  error={errors.password}
+                  style={{ paddingRight: 40 }}
+                />
+                <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn} hitSlop={8}>
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={18} color={TEXT.t3} />
+                </Pressable>
+              </View>
+
+              <Pressable onPress={handleLogin} disabled={loading} style={[styles.primaryBtn, loading && styles.btnDisabled]}>
+                {loading ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.primaryBtnText}>AUTHENTICATE →</Text>}
+              </Pressable>
+
+              <Pressable onPress={() => router.push('/(auth)/register')} hitSlop={8} style={styles.ghostBtn}>
+                <Text style={styles.ghostText}>REGISTER.NEW</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.footer}>// SECURE · ENCRYPTED · v1.0.0</Text>
           </View>
-
-          <View style={styles.form}>
-            <FormInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@university.edu"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              error={errors.email}
-            />
-            <FormInput
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              secureTextEntry
-              error={errors.password}
-            />
-            <Pressable hitSlop={8} style={styles.forgotWrap}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </Pressable>
-
-            <Pressable onPress={handleLogin} disabled={loading} style={[styles.primaryBtn, loading && styles.btnDisabled]}>
-              {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.primaryBtnText}>Sign in</Text>}
-            </Pressable>
-          </View>
-
-          <Pressable onPress={() => router.push('/(auth)/register')} hitSlop={8} style={styles.linkWrap}>
-            <Text style={styles.link}>Don't have an account? <Text style={styles.linkAccent}>Create one</Text></Text>
-          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -88,20 +114,49 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
+  safe: { flex: 1, backgroundColor: BG.base },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
+  },
+  topText: {
+    fontFamily: FontFamily.monoMedium,
+    fontSize: FontSize.monoSm,
+    color: TEXT.t2,
+  },
   flex: { flex: 1 },
-  container: { flexGrow: 1, padding: 24, justifyContent: 'center', gap: 32 },
-  wordmark: { fontSize: FontSize.lg, fontFamily: FontFamily.soraBold, color: TEXT.primary, letterSpacing: 1.5 },
-  header: { gap: 6 },
-  heading: { fontSize: FontSize['2xl'], fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
-  sub: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.secondary },
-  form: { gap: 14 },
-  forgotWrap: { alignSelf: 'flex-end' },
-  forgotText: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: ACCENT.blue },
-  primaryBtn: { backgroundColor: ACCENT.blue, borderRadius: 8, paddingVertical: 14, alignItems: 'center', minHeight: 48, marginTop: 4 },
+  scroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  container: { width: '100%', maxWidth: 400 },
+  header: { marginBottom: 32 },
+  heading: { fontSize: FontSize.display, fontFamily: FontFamily.display, color: TEXT.t0 },
+  sub: { fontSize: FontSize.body, fontFamily: FontFamily.monoMedium, color: TEXT.t3, marginTop: 8 },
+  form: { gap: 16, marginBottom: 48 },
+  passwordWrap: { position: 'relative' },
+  eyeBtn: {
+    position: 'absolute',
+    right: 12,
+    top: 36, // roughly middle of input
+  },
+  primaryBtn: { 
+    backgroundColor: ACCENT.primary, 
+    borderRadius: 0, 
+    paddingVertical: 12, 
+    alignItems: 'center', 
+    marginTop: 16 
+  },
   btnDisabled: { opacity: 0.6 },
-  primaryBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFFFFF' },
-  linkWrap: { alignItems: 'center' },
-  link: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.secondary },
-  linkAccent: { color: ACCENT.blue, fontFamily: FontFamily.interSemiBold },
+  primaryBtnText: { 
+    fontSize: FontSize.body, 
+    fontFamily: FontFamily.interSemiBold, 
+    color: '#000',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  ghostBtn: { alignItems: 'center', marginTop: 16 },
+  ghostText: { fontSize: FontSize.monoSm, fontFamily: FontFamily.monoMedium, color: TEXT.t3, textTransform: 'uppercase' },
+  footer: { textAlign: 'center', fontSize: FontSize.monoSm, fontFamily: FontFamily.monoMedium, color: TEXT.t3 },
 });

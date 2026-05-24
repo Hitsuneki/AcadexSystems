@@ -55,7 +55,7 @@ export default function FileViewerScreen() {
         </Pressable>
         <Text style={styles.title} numberOfLines={1}>File viewer</Text>
         <Pressable onPress={() => Linking.openURL(file.storageUrl)} hitSlop={8}>
-          <Ionicons name="open-outline" size={20} color={ACCENT.blue} />
+          <Ionicons name="open-outline" size={20} color={ACCENT.signal} />
         </Pressable>
       </View>
 
@@ -78,7 +78,7 @@ export default function FileViewerScreen() {
             <Text style={styles.downloadTitle}>Download to view</Text>
             <Text style={styles.downloadText}>This file type opens in an external viewer.</Text>
             <Pressable onPress={() => Linking.openURL(file.storageUrl)} style={styles.downloadBtn}>
-              <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+              <Ionicons name="download-outline" size={18} color={TEXT.inverse} />
               <Text style={styles.downloadBtnText}>Open file</Text>
             </Pressable>
           </View>
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 0.5,
     borderColor: BORDER.default,
     backgroundColor: BG.bg1,
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   imageFrame: {
     minHeight: 420,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 0.5,
     borderColor: BORDER.default,
     backgroundColor: BG.bg1,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 0.5,
     borderColor: BORDER.default,
     backgroundColor: BG.bg1,
@@ -168,13 +168,13 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
     paddingHorizontal: 18,
-    borderRadius: 8,
-    backgroundColor: ACCENT.blue,
+    borderRadius: 0,
+    backgroundColor: ACCENT.signal,
   },
   downloadBtnText: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.interSemiBold,
-    color: '#FFFFFF',
+    color: TEXT.inverse,
   },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
   emptyTitle: {

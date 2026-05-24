@@ -87,15 +87,15 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
+  safe: { flex: 1, backgroundColor: BG.base },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
   title: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
   container: { padding: 16, gap: 16, paddingBottom: 40 },
-  completionCard: { backgroundColor: BG.bg1, borderRadius: 12, borderWidth: 0.5, borderColor: BORDER.default, padding: 20, gap: 8, alignItems: 'center' },
-  completionPercent: { fontSize: 52, fontFamily: FontFamily.soraBold, color: TEXT.primary, lineHeight: 58 },
+  completionCard: { backgroundColor: BG.bg1, borderRadius: 0, borderWidth: 0.5, borderColor: BORDER.dim, padding: 20, gap: 8, alignItems: 'center' },
+  completionPercent: { fontSize: 52, fontFamily: FontFamily.monoBold, color: TEXT.primary, lineHeight: 58 },
   completionLabel: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.secondary },
   completionSub: { fontSize: FontSize.sm, fontFamily: FontFamily.interRegular, color: TEXT.muted, marginTop: 4 },
   memberStatRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-  memberStatName: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
-  memberStatCount: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: TEXT.secondary },
+  memberStatName: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.monoMedium, color: TEXT.primary },
+  memberStatCount: { fontSize: FontSize.md, fontFamily: FontFamily.monoBold, color: TEXT.secondary },
 });

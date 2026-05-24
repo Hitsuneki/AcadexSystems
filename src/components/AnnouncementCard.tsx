@@ -53,7 +53,7 @@ export function AnnouncementCard({ announcement, author, currentUserId, onReact,
             </Pressable>
           ) : (
             <Pressable onPress={() => Linking.openURL(announcement.attachmentUrl!)} style={styles.fileRow}>
-              <Ionicons name="document-outline" size={20} color={ACCENT.blue} />
+              <Ionicons name="document-outline" size={20} color={ACCENT.signal} />
               <Text style={styles.fileName} numberOfLines={1}>Attached File</Text>
               <Ionicons name="open-outline" size={16} color={TEXT.muted} />
             </Pressable>
@@ -68,7 +68,7 @@ export function AnnouncementCard({ announcement, author, currentUserId, onReact,
         <Ionicons
           name={hasReacted ? 'thumbs-up' : 'thumbs-up-outline'}
           size={14}
-          color={hasReacted ? ACCENT.blue : TEXT.secondary}
+          color={hasReacted ? ACCENT.signal : TEXT.secondary}
         />
         {reactionCount > 0 && (
           <Text style={[styles.reactionCount, hasReacted && styles.reactionCountActive]}>
@@ -89,6 +89,8 @@ const styles = StyleSheet.create({
     padding: CardDefaults.padding,
     marginBottom: 10,
     gap: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: TEXT.faint,
   },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   authorInfo: { flex: 1 },
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
+    fontFamily: FontFamily.mono,
     color: TEXT.muted,
     marginTop: 1,
   },
@@ -115,9 +117,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: Platform.OS === 'web' ? 480 : undefined,
     aspectRatio: 16 / 9,
-    borderRadius: 8,
+    borderRadius: 0,
     backgroundColor: BG.bg2,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderColor: BORDER.default,
   },
   fileRow: {
@@ -126,8 +128,8 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 12,
     backgroundColor: BG.bg2,
-    borderRadius: 8,
-    borderWidth: 0.5,
+    borderRadius: 0,
+    borderWidth: 1,
     borderColor: BORDER.default,
   },
   fileName: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
@@ -137,15 +139,17 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: BORDER.default,
+    backgroundColor: BG.bg0,
     alignSelf: 'flex-start',
   },
-  reactionBtnActive: { backgroundColor: ACCENT.blueDim },
+  reactionBtnActive: { backgroundColor: ACCENT.signalDim, borderColor: ACCENT.signalBorder },
   reactionCount: {
     fontSize: FontSize.sm,
-    fontFamily: FontFamily.interMedium,
+    fontFamily: FontFamily.mono,
     color: TEXT.secondary,
   },
-  reactionCountActive: { color: ACCENT.blue },
+  reactionCountActive: { color: ACCENT.signal },
 });

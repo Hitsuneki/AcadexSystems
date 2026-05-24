@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, Pressable, SectionList, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, Pressable, SectionList, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TaskCard } from '@/components/TaskCard';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { SectionHeader } from '@/components/SectionHeader';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMyTasks } from '@/hooks/use-my-tasks';
-import { useCallback } from 'react';
 import { BG, TEXT, ACCENT, BORDER } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import type { TaskStatus } from '@/types';
 
 const FILTERS: { label: string; value: TaskStatus | 'all' }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Backlog', value: 'backlog' },
-  { label: 'In Progress', value: 'inProgress' },
-  { label: 'Review', value: 'review' },
-  { label: 'Done', value: 'done' },
+  { label: 'ALL', value: 'all' },
+  { label: 'BACKLOG', value: 'backlog' },
+  { label: 'IN.PROGRESS', value: 'inProgress' },
+  { label: 'REVIEW', value: 'review' },
+  { label: 'DONE', value: 'done' },
 ];
 
 export default function MyTasksScreen() {
@@ -27,7 +27,6 @@ export default function MyTasksScreen() {
   const { groups, loading, refetch, error } = useMyTasks(user?.uid);
   const [filter, setFilter] = useState<TaskStatus | 'all'>('all');
 
-  // Re-fetch whenever this tab comes back into focus so unassigned tasks disappear immediately
   useFocusEffect(
     useCallback(() => {
       void refetch();
@@ -51,28 +50,26 @@ export default function MyTasksScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>My tasks</Text>
-      </View>
+      <SectionHeader title="TASK.QUEUE" style={{ marginBottom: 0 }} />
 
-      {/* Filters */}
       <View style={styles.filterRow}>
         {FILTERS.map((f) => (
-          <Pressable key={f.value} onPress={() => setFilter(f.value)} style={[styles.filterBtn, filter === f.value && styles.filterBtnActive]}>
+          <Pressable key={f.value} onPress={() => setFilter(f.value)} style={styles.filterBtn}>
             <Text style={[styles.filterText, filter === f.value && styles.filterTextActive]}>{f.label}</Text>
+            {filter === f.value && <View style={styles.filterIndicator} />}
           </Pressable>
         ))}
       </View>
 
       {filteredGroups.length === 0 ? (
-        <EmptyState icon="checkmark-circle-outline" title="No tasks assigned" subtitle="Tasks assigned to you will appear here" />
+        <EmptyState title="No tasks found" />
       ) : (
         <SectionList
           sections={filteredGroups.map((g) => ({ title: g.projectName, data: g.tasks }))}
           keyExtractor={(item) => item.id}
           renderSectionHeader={({ section }) => (
             <View style={styles.groupHeader}>
-              <Text style={styles.groupName}>{section.title}</Text>
+              <Text style={styles.groupName}>// {section.title.toUpperCase()}</Text>
             </View>
           )}
           renderItem={({ item }) => (
@@ -88,15 +85,41 @@ export default function MyTasksScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
-  heading: { fontSize: FontSize['2xl'], fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  filterBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: BORDER.default, backgroundColor: BG.bg2 },
-  filterBtnActive: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
-  filterText: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
-  filterTextActive: { color: ACCENT.blue },
+  safe: { flex: 1, backgroundColor: BG.base },
+  filterRow: { 
+    flexDirection: 'row', 
+    paddingHorizontal: 16, 
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
+    backgroundColor: BG.base,
+  },
+  filterBtn: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 14, 
+    position: 'relative',
+  },
+  filterText: { 
+    fontSize: FontSize.monoSm, 
+    fontFamily: FontFamily.monoMedium, 
+    color: TEXT.t3, 
+    textTransform: 'uppercase' 
+  },
+  filterTextActive: { color: TEXT.t0 },
+  filterIndicator: {
+    position: 'absolute',
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: ACCENT.primary,
+  },
   listContent: { padding: 16, paddingTop: 4 },
-  groupHeader: { paddingVertical: 10 },
-  groupName: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: TEXT.secondary, textTransform: 'uppercase', letterSpacing: 0.8 },
+  groupHeader: { paddingVertical: 16, paddingHorizontal: 4 },
+  groupName: { 
+    fontSize: FontSize.monoSm, 
+    fontFamily: FontFamily.monoMedium, 
+    color: TEXT.t2, 
+    textTransform: 'uppercase', 
+    letterSpacing: 1.5 
+  },
 });

@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CoursePicker } from "@/components/CoursePicker";
 import { FormInput } from "@/components/FormInput";
+import { SectionHeader } from "@/components/SectionHeader";
 import { ACCENT, BG, BORDER, TEXT } from "@/constants/colors";
 import { FontFamily, FontSize } from "@/constants/typography";
 import {
@@ -51,7 +52,9 @@ export default function CompleteProfileScreen() {
       setCourse(profile.course ?? "");
       setBio(profile.bio ?? "");
       setRoleLabel(profile.roleLabel ?? "Student");
-      if (profile.avatarUri) setAvatarUri(profile.avatarUri);
+      // @ts-ignore
+      const url = profile.avatarUrl || profile.avatarUri;
+      if (url) setAvatarUri(url);
     } else if (user) {
       getUserProfile(user.uid)
         .then((doc) => {
@@ -60,7 +63,9 @@ export default function CompleteProfileScreen() {
           setCourse(doc.course ?? "");
           setBio(doc.bio ?? "");
           setRoleLabel(doc.roleLabel ?? "Student");
-          if (doc.avatarUri) setAvatarUri(doc.avatarUri);
+          // @ts-ignore
+          const url = doc.avatarUrl || doc.avatarUri;
+          if (url) setAvatarUri(url);
         })
         .catch(() => {});
     }
@@ -75,11 +80,7 @@ export default function CompleteProfileScreen() {
         setAvatarMime(picked.mimeType);
       }
     } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Could not open photos",
-        text2: err?.message,
-      });
+      Toast.show({ type: "error", text1: "Could not open photos" });
     } finally {
       setPickingImage(false);
     }
@@ -91,11 +92,7 @@ export default function CompleteProfileScreen() {
       clearAuth();
       router.replace("/(auth)/login");
     } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Could not sign out",
-        text2: err?.message,
-      });
+      Toast.show({ type: "error", text1: "Could not sign out" });
     }
   };
 
@@ -131,13 +128,12 @@ export default function CompleteProfileScreen() {
       });
 
       const updated = await getUserProfile(user.uid);
-      if (updated) setProfile(updated);
+      if (updated) {
+        setProfile(updated);
+        router.replace("/(main)");
+      }
     } catch (err: any) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to save profile",
-        text2: err?.message,
-      });
+      Toast.show({ type: "error", text1: "Failed to save profile" });
     } finally {
       setLoading(false);
     }
@@ -145,49 +141,41 @@ export default function CompleteProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.flex}
-      >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          
           <Pressable onPress={handleBack} hitSlop={8} style={styles.backRow}>
-            <Ionicons name="arrow-back" size={20} color={TEXT.secondary} />
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>← LOGOUT</Text>
           </Pressable>
 
+          <SectionHeader title="PROFILE.INIT" />
+
           <View style={styles.header}>
-            <Text style={styles.heading}>Set up your profile</Text>
-            <Text style={styles.sub}>Tell us about yourself</Text>
+            <Text style={styles.heading}>OPERATOR PROFILE</Text>
           </View>
 
-          <Pressable
-            onPress={pickAvatar}
-            disabled={pickingImage}
-            style={styles.avatarWrap}
-          >
+          <Pressable onPress={pickAvatar} disabled={pickingImage} style={styles.avatarWrap}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person-outline" size={36} color={TEXT.muted} />
+                <Text style={styles.avatarInitials}>
+                  {fullName ? fullName.trim()[0]?.toUpperCase() : "?"}
+                </Text>
               </View>
             )}
             <View style={styles.cameraIcon}>
               {pickingImage ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color="#000" />
               ) : (
-                <Ionicons name="camera" size={14} color="#FFFFFF" />
+                <Ionicons name="cloud-upload" size={14} color="#000" />
               )}
             </View>
           </Pressable>
-          <Text style={styles.avatarHint}>Tap to add a profile photo (optional)</Text>
 
           <View style={styles.form}>
             <FormInput
-              label="Full name"
+              label="ID.FULLNAME"
               value={fullName}
               onChangeText={setFullName}
               placeholder="Your full name"
@@ -195,22 +183,19 @@ export default function CompleteProfileScreen() {
             />
 
             <CoursePicker
+              label="COURSE.FIELD"
               value={course}
               onChange={setCourse}
               error={errors.course}
             />
 
             <View style={styles.section}>
-              <Text style={styles.label}>Role</Text>
+              <Text style={styles.label}>ROLE.CLASS</Text>
               <View style={styles.roleRow}>
                 {ROLES.map((r) => (
                   <Pressable
                     key={r}
                     onPress={() => setRoleLabel(r)}
-                    style={[
-                      styles.roleBtn,
-                      roleLabel === r && styles.roleBtnActive,
-                    ]}
                   >
                     <Text
                       style={[
@@ -218,7 +203,7 @@ export default function CompleteProfileScreen() {
                         roleLabel === r && styles.roleBtnTextActive,
                       ]}
                     >
-                      {r}
+                      [{r.toUpperCase()}]
                     </Text>
                   </Pressable>
                 ))}
@@ -226,7 +211,7 @@ export default function CompleteProfileScreen() {
             </View>
 
             <FormInput
-              label="Bio (optional)"
+              label="BIO.DESCRIPTION"
               value={bio}
               onChangeText={setBio}
               placeholder="A short bio..."
@@ -234,15 +219,11 @@ export default function CompleteProfileScreen() {
               numberOfLines={3}
             />
 
-            <Pressable
-              onPress={handleContinue}
-              disabled={loading}
-              style={[styles.primaryBtn, loading && styles.btnDisabled]}
-            >
+            <Pressable onPress={handleContinue} disabled={loading} style={[styles.primaryBtn, loading && styles.btnDisabled]}>
               {loading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color="#000" />
               ) : (
-                <Text style={styles.primaryBtnText}>Continue</Text>
+                <Text style={styles.primaryBtnText}>INIT PROFILE →</Text>
               )}
             </Pressable>
           </View>
@@ -253,90 +234,77 @@ export default function CompleteProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
+  safe: { flex: 1, backgroundColor: BG.base },
   flex: { flex: 1 },
-  container: { flexGrow: 1, padding: 24, gap: 20, alignItems: "stretch" },
-  backRow: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start" },
+  container: { flexGrow: 1, padding: 24, gap: 20 },
+  backRow: { alignSelf: "flex-start", marginBottom: 16 },
   backText: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interMedium,
-    color: TEXT.secondary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
   },
-  header: { gap: 6 },
+  header: { gap: 6, marginBottom: 16 },
   heading: {
-    fontSize: FontSize["2xl"],
-    fontFamily: FontFamily.soraSemiBold,
-    color: TEXT.primary,
+    fontSize: FontSize.display,
+    fontFamily: FontFamily.display,
+    color: TEXT.t0,
   },
-  sub: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.secondary,
-  },
-  avatarWrap: { alignSelf: "center", position: "relative" },
-  avatar: { width: 88, height: 88, borderRadius: 44 },
+  avatarWrap: { alignSelf: "center", position: "relative", marginBottom: 24 },
+  avatar: { width: 56, height: 56, borderRadius: 0, borderWidth: 1, borderColor: BORDER.mid },
   avatarPlaceholder: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: BG.bg3,
+    width: 56,
+    height: 56,
+    borderRadius: 0,
+    backgroundColor: BG.bg1,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: BORDER.default,
+    borderColor: BORDER.mid,
+  },
+  avatarInitials: {
+    fontSize: FontSize.monoLg,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
   },
   cameraIcon: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: ACCENT.blue,
+    bottom: -6,
+    right: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 0,
+    backgroundColor: ACCENT.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarHint: {
-    alignSelf: "center",
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.muted,
-    marginTop: -12,
-  },
   form: { gap: 16 },
-  section: { gap: 8 },
+  section: { gap: 6, marginBottom: 14 },
   label: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interMedium,
-    color: TEXT.secondary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
+    textTransform: 'uppercase',
   },
-  roleRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  roleBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: BORDER.default,
-    backgroundColor: BG.bg2,
-  },
-  roleBtnActive: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
+  roleRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   roleBtnText: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interMedium,
-    color: TEXT.secondary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
   },
-  roleBtnTextActive: { color: ACCENT.blue },
+  roleBtnTextActive: { color: ACCENT.primary },
   primaryBtn: {
-    backgroundColor: ACCENT.blue,
-    borderRadius: 8,
-    paddingVertical: 14,
+    backgroundColor: ACCENT.primary,
+    borderRadius: 0,
+    paddingVertical: 12,
     alignItems: "center",
-    minHeight: 48,
+    marginTop: 16,
   },
   btnDisabled: { opacity: 0.6 },
   primaryBtnText: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.body,
     fontFamily: FontFamily.interSemiBold,
-    color: "#FFFFFF",
+    color: "#000",
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

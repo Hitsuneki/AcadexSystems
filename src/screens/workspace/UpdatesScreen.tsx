@@ -116,7 +116,7 @@ export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
       <View style={styles.postContainer}>
         {attachmentAsset && (
           <View style={styles.attachmentPreview}>
-            <Ionicons name="document-attach" size={16} color={ACCENT.blue} />
+            <Ionicons name="document-attach" size={16} color={ACCENT.signal} />
             <Text style={styles.attachmentName} numberOfLines={1}>
               {attachmentAsset.name}
             </Text>
@@ -146,9 +146,9 @@ export default function UpdatesScreen({ projectId }: UpdatesScreenProps) {
             ]}
           >
             {sending || uploadingAttachment ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color={TEXT.inverse} />
             ) : (
-              <Ionicons name="send" size={18} color="#FFF" />
+              <Ionicons name="send" size={18} color={TEXT.inverse} />
             )}
           </Pressable>
         </View>
@@ -240,8 +240,8 @@ const styles = StyleSheet.create({
   sendBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: ACCENT.blue,
+    borderRadius: 0,
+    backgroundColor: ACCENT.signal,
     alignItems: "center",
     justifyContent: "center",
   },

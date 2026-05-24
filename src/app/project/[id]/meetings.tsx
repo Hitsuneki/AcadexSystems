@@ -30,7 +30,7 @@ export default function MeetingsScreen() {
         </Pressable>
         <Text style={styles.title}>Meetings</Text>
         <Pressable onPress={() => router.push(`/project/${projectId}/meeting/new`)} hitSlop={8}>
-          <Ionicons name="add" size={24} color={ACCENT.blue} />
+          <Ionicons name="add" size={24} color={ACCENT.signal} />
         </Pressable>
       </View>
 
@@ -61,8 +61,8 @@ export default function MeetingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
+  safe: { flex: 1, backgroundColor: BG.base },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.dim },
   title: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
   listContent: { padding: 16, flexGrow: 1 },
 });

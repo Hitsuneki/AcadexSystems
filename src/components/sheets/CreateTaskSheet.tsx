@@ -85,7 +85,7 @@ export function CreateTaskSheet({ visible, onClose, projectId, userId, initialCo
             <Text style={styles.label}>Due date (optional)</Text>
             {dueDate && (
               <Pressable onPress={() => setDueDate(null)}>
-                <Text style={{ fontSize: FontSize.xs, color: SEMANTIC.red, fontFamily: FontFamily.interMedium }}>Clear</Text>
+                <Text style={{ fontSize: FontSize.xs, color: SEMANTIC.red, fontFamily: FontFamily.mono }}>CLEAR</Text>
               </Pressable>
             )}
           </View>
@@ -121,7 +121,7 @@ export function CreateTaskSheet({ visible, onClose, projectId, userId, initialCo
         )}
 
         <Pressable onPress={handleCreate} disabled={loading} style={[styles.createBtn, loading && styles.createBtnDisabled]}>
-          {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.createBtnText}>Create task</Text>}
+          {loading ? <ActivityIndicator size="small" color={TEXT.inverse} /> : <Text style={styles.createBtnText}>CREATE TASK</Text>}
         </Pressable>
       </View>
     </AcadexBottomSheet>
@@ -131,16 +131,16 @@ export function CreateTaskSheet({ visible, onClose, projectId, userId, initialCo
 const styles = StyleSheet.create({
   form: { gap: 16, paddingTop: 16 },
   section: { gap: 8 },
-  label: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
+  label: { fontSize: FontSize.xs, fontFamily: FontFamily.mono, color: TEXT.secondary, textTransform: 'uppercase' },
   priorityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  priorityBtn: { paddingHorizontal: 4, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: 'transparent' },
-  dateBtn: { backgroundColor: BG.bg3, borderRadius: 7, borderWidth: 1, borderColor: BORDER.default, padding: 12 },
-  dateBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.primary },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
-  memberRowSelected: { borderColor: ACCENT.blueBorder, backgroundColor: ACCENT.blueDim },
+  priorityBtn: { paddingHorizontal: 4, paddingVertical: 4, borderRadius: 0, borderWidth: 1, borderColor: 'transparent' },
+  dateBtn: { backgroundColor: BG.bg0, borderRadius: 0, borderWidth: 1, borderColor: BORDER.default, padding: 12 },
+  dateBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.primary, textTransform: 'uppercase' },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8, borderRadius: 0, borderWidth: 1, borderColor: 'transparent' },
+  memberRowSelected: { borderColor: ACCENT.signalBorder, backgroundColor: ACCENT.signalDim },
   memberName: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
-  check: { color: ACCENT.blue, fontSize: FontSize.lg, fontFamily: FontFamily.interBold },
-  createBtn: { backgroundColor: ACCENT.blue, borderRadius: 8, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: 8 },
+  check: { color: ACCENT.signal, fontSize: FontSize.lg, fontFamily: FontFamily.mono },
+  createBtn: { backgroundColor: ACCENT.signal, borderRadius: 0, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: 8 },
   createBtnDisabled: { opacity: 0.6 },
-  createBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFFFFF' },
+  createBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse },
 });

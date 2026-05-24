@@ -1,11 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { BG, BORDER, TEXT } from '@/constants/colors';
-import { CardDefaults } from '@/constants/theme';
 import { FontFamily, FontSize } from '@/constants/typography';
-import { formatDate, formatFileSize } from '@/utils/date';
-import { FileTypeIcon } from './FileTypeIcon';
+import { formatShortDate, formatFileSize } from '@/utils/date';
+import { Tag } from './Tags';
 import type { ProjectFile } from '@/types';
 
 interface FileCardProps {
@@ -18,48 +16,56 @@ export function FileCard({ file, onPress, onDelete }: FileCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <FileTypeIcon fileType={file.fileType} size={40} />
-      <View style={styles.info}>
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      
+      <View style={styles.left}>
+        <Tag type="file" value={file.fileType} style={{ width: 44 }} />
         <Text style={styles.fileName} numberOfLines={1}>{file.fileName}</Text>
-        <Text style={styles.meta}>
-          {formatFileSize(file.fileSize)} · {formatDate(file.uploadedAt)}
-        </Text>
       </View>
-      {onDelete ? (
-        <Pressable onPress={onDelete} hitSlop={8} style={{ padding: 4 }}>
-          <Ionicons name="trash-outline" size={16} color={TEXT.muted} />
-        </Pressable>
-      ) : (
-        <Ionicons name="chevron-forward" size={16} color={TEXT.muted} />
-      )}
+
+      <View style={styles.right}>
+        <Text style={styles.metaText}>{formatFileSize(file.fileSize)}</Text>
+        <Text style={styles.metaText}>{formatShortDate(file.uploadedAt)}</Text>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: CardDefaults.backgroundColor,
-    borderRadius: CardDefaults.borderRadius,
-    borderWidth: CardDefaults.borderWidth,
-    borderColor: CardDefaults.borderColor,
-    padding: CardDefaults.padding,
-    gap: 12,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: BG.base,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
   },
-  pressed: { opacity: 0.75 },
-  info: { flex: 1 },
+  pressed: { backgroundColor: BG.bg2 },
+  left: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   fileName: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interMedium,
-    color: TEXT.primary,
-    marginBottom: 2,
+    flex: 1,
+    fontSize: FontSize.body,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t1,
   },
-  meta: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.secondary,
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginLeft: 16,
+  },
+  metaText: {
+    fontSize: FontSize.body,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t2,
+    width: 50, // rough width for size
+    textAlign: 'right',
   },
 });

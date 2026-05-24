@@ -108,9 +108,9 @@ export default function EditProfileScreen() {
             )}
             <View style={styles.cameraIcon}>
               {pickingImage ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={TEXT.inverse} />
               ) : (
-                <Ionicons name="camera" size={14} color="#FFFFFF" />
+                <Ionicons name="camera" size={14} color={TEXT.inverse} />
               )}
             </View>
           </Pressable>
@@ -135,7 +135,7 @@ export default function EditProfileScreen() {
             </View>
             <FormInput label="Bio (optional)" value={bio} onChangeText={setBio} multiline numberOfLines={3} />
             <Pressable onPress={handleSave} disabled={loading} style={[styles.primaryBtn, loading && styles.btnDisabled]}>
-              {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.primaryBtnText}>Save changes</Text>}
+              {loading ? <ActivityIndicator size="small" color={TEXT.inverse} /> : <Text style={styles.primaryBtnText}>SAVE CHANGES</Text>}
             </Pressable>
           </View>
         </ScrollView>
@@ -151,18 +151,18 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
   avatarWrap: { alignSelf: 'center', position: 'relative' },
-  avatar: { width: 88, height: 88, borderRadius: 44 },
-  avatarPlaceholder: { width: 88, height: 88, borderRadius: 44, backgroundColor: BG.bg3, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: BORDER.default },
-  cameraIcon: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: ACCENT.blue, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 88, height: 88, borderRadius: 0 },
+  avatarPlaceholder: { width: 88, height: 88, borderRadius: 0, backgroundColor: BG.bg3, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: BORDER.default },
+  cameraIcon: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 0, backgroundColor: ACCENT.signal, alignItems: 'center', justifyContent: 'center' },
   form: { gap: 16 },
   section: { gap: 8 },
   label: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
   roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  roleBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: BORDER.default, backgroundColor: BG.bg2 },
-  roleBtnActive: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
+  roleBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 0, borderWidth: 1, borderColor: BORDER.default, backgroundColor: BG.bg2 },
+  roleBtnActive: { borderColor: ACCENT.signal, backgroundColor: ACCENT.signalDim },
   roleBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
-  roleBtnTextActive: { color: ACCENT.blue },
-  primaryBtn: { backgroundColor: ACCENT.blue, borderRadius: 8, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
+  roleBtnTextActive: { color: ACCENT.signal },
+  primaryBtn: { backgroundColor: ACCENT.signal, borderRadius: 0, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
   btnDisabled: { opacity: 0.6 },
-  primaryBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFFFFF' },
+  primaryBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse },
 });

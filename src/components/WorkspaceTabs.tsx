@@ -1,7 +1,3 @@
-/**
- * WorkspaceTabs — web-safe fallback.
- * Uses state-driven rendering (no react-native-pager-view).
- */
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { BG, BORDER, TEXT, ACCENT } from '@/constants/colors';
@@ -23,7 +19,6 @@ export function WorkspaceTabs({ tabs, initialIndex = 0 }: WorkspaceTabsProps) {
 
   return (
     <View style={styles.container}>
-      {/* Tab bar */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={styles.tabBarContent}>
         {tabs.map((tab, index) => {
           const active = activeIndex === index;
@@ -41,7 +36,6 @@ export function WorkspaceTabs({ tabs, initialIndex = 0 }: WorkspaceTabsProps) {
         })}
       </ScrollView>
 
-      {/* Content — only render active page */}
       <View style={styles.page}>
         {tabs[activeIndex]?.content}
       </View>
@@ -50,35 +44,35 @@ export function WorkspaceTabs({ tabs, initialIndex = 0 }: WorkspaceTabsProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG.bg0 },
+  container: { flex: 1, backgroundColor: BG.base },
   tabBar: {
     flexGrow: 0,
-    backgroundColor: BG.bg1,
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER.default,
+    backgroundColor: BG.base,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
   },
-  tabBarContent: { flexDirection: 'row' },
+  tabBarContent: { flexDirection: 'row', width: '100%' },
   tab: {
-    minWidth: 72,
+    flex: 1, // Full width spread
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     position: 'relative',
   },
   tabLabel: {
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.interMedium,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  tabLabelActive: { color: TEXT.primary },
-  tabLabelInactive: { color: TEXT.muted },
+  tabLabelActive: { color: TEXT.t0 },
+  tabLabelInactive: { color: TEXT.t3 },
   indicator: {
     position: 'absolute',
-    bottom: 0,
-    left: 8,
-    right: 8,
-    height: 2,
-    backgroundColor: ACCENT.blue,
-    borderRadius: 1,
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: ACCENT.primary,
   },
   page: { flex: 1 },
 });

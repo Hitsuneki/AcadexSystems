@@ -31,17 +31,18 @@ export default function RootLayout() {
 
     const segs = segments as string[];
     const inAuth = segs[0] === '(auth)';
+    const isAuthRoute = inAuth && (segs[1] === 'login' || segs[1] === 'register');
 
     if (!user) {
       if (!inAuth) router.replace('/(auth)' as never);
     } else if (!isProfileComplete(profile)) {
-      if (!(inAuth && segs[1] === 'complete-profile')) {
+      if (!(inAuth && (segs[1] === 'complete-profile' || !segs[1]))) {
         router.replace('/(auth)/complete-profile');
       }
     } else {
-      if (inAuth) router.replace('/(main)' as never);
+      if (isAuthRoute) router.replace('/(main)' as never);
     }
-  }, [user, profile, authLoading, fontsLoaded]);
+  }, [user, profile, authLoading, fontsLoaded, segments]);
 
   if (!fontsLoaded && !fontError) {
     return <LoadingSpinner fullscreen />;

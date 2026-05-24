@@ -59,7 +59,7 @@ export default function MembersScreen() {
           <Text style={styles.inviteLabel}>Invite code</Text>
           <Pressable onPress={copyInviteCode} style={styles.inviteRow}>
             <Text style={styles.inviteCode}>{currentProject.inviteCode}</Text>
-            <Ionicons name="copy-outline" size={18} color={ACCENT.blue} />
+            <Ionicons name="copy-outline" size={18} color={ACCENT.signal} />
           </Pressable>
           <Text style={styles.inviteHint}>Share this code to invite people</Text>
         </View>
@@ -87,15 +87,15 @@ export default function MembersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
+  safe: { flex: 1, backgroundColor: BG.base },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.dim },
   title: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
-  inviteSection: { margin: 16, backgroundColor: BG.bg1, borderRadius: 10, borderWidth: 0.5, borderColor: BORDER.default, padding: 16, gap: 6 },
+  inviteSection: { margin: 16, backgroundColor: BG.bg1, borderRadius: 0, borderWidth: 0.5, borderColor: BORDER.default, padding: 16, gap: 6 },
   inviteLabel: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: TEXT.secondary, textTransform: 'uppercase', letterSpacing: 0.8 },
   inviteRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  inviteCode: { fontSize: 24, fontFamily: FontFamily.soraBold, color: TEXT.primary, letterSpacing: 6 },
+  inviteCode: { fontSize: 24, fontFamily: FontFamily.monoBold, color: TEXT.primary, letterSpacing: 0 },
   inviteHint: { fontSize: FontSize.sm, fontFamily: FontFamily.interRegular, color: TEXT.muted },
   listContent: { paddingHorizontal: 16, paddingBottom: 24 },
   memberWrap: { paddingHorizontal: 0 },
-  separator: { height: 0.5, backgroundColor: BORDER.default },
+  separator: { height: 0.5, backgroundColor: BORDER.dim },
 });

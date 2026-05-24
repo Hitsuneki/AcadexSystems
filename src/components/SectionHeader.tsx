@@ -1,21 +1,22 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ViewStyle } from 'react-native';
 import { TEXT, ACCENT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
 interface SectionHeaderProps {
   title: string;
-  action?: string;
+  actionText?: string;
   onAction?: () => void;
+  style?: ViewStyle;
 }
 
-export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
+export function SectionHeader({ title, actionText, onAction, style }: SectionHeaderProps) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      {action && onAction && (
+    <View style={[styles.container, style]}>
+      <Text style={styles.title}>// {title}</Text>
+      {actionText && onAction && (
         <Pressable onPress={onAction} hitSlop={8}>
-          <Text style={styles.action}>{action}</Text>
+          <Text style={styles.action}>{actionText}</Text>
         </Pressable>
       )}
     </View>
@@ -25,20 +26,20 @@ export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interSemiBold,
-    color: TEXT.secondary,
+    fontFamily: FontFamily.interMedium,
+    fontSize: FontSize.label,
+    color: TEXT.t3,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   action: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interMedium,
-    color: ACCENT.blue,
+    fontFamily: FontFamily.monoMedium,
+    fontSize: FontSize.monoSm,
+    color: ACCENT.primary,
   },
 });

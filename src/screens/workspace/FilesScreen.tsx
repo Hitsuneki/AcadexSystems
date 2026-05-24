@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useFiles } from '@/hooks/use-files';
 import { uploadFile } from '@/services/storage.service';
 import { deleteFile } from '@/services/file.service';
-import { ACCENT, BG } from '@/constants/colors';
+import { ACCENT, BG, TEXT } from '@/constants/colors';
 import type { ProjectFile } from '@/types';
 
 interface FilesScreenProps {
@@ -82,7 +82,7 @@ export default function FilesScreen({ projectId }: FilesScreenProps) {
       />
 
       <Pressable onPress={handleUpload} disabled={uploading} style={[styles.fab, uploading && styles.fabDisabled]}>
-        <Ionicons name={uploading ? 'hourglass-outline' : 'cloud-upload-outline'} size={22} color="#FFFFFF" />
+        <Ionicons name={uploading ? 'hourglass-outline' : 'cloud-upload-outline'} size={22} color={TEXT.inverse} />
       </Pressable>
     </View>
   );
@@ -97,11 +97,10 @@ const styles = StyleSheet.create({
     right: 20,
     width: 52,
     height: 52,
-    borderRadius: 26,
-    backgroundColor: ACCENT.blue,
+    borderRadius: 0,
+    backgroundColor: ACCENT.signal,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 4px 8px rgba(37, 99, 235, 0.4)',
-  },
+      },
   fabDisabled: { opacity: 0.6 },
 });

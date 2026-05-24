@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
-import { CardDefaults } from '@/constants/theme';
+import { TEXT, ACCENT, SEMANTIC, BORDER, BG } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { formatMeetingDate } from '@/utils/date';
-import { Avatar } from './Avatar';
+import { Tag } from './Tags';
 import type { Meeting, UserProfile } from '@/types';
 
 interface MeetingCardProps {
@@ -17,8 +16,6 @@ interface MeetingCardProps {
 
 export function MeetingCard({ meeting, members = [], onPress, onDelete }: MeetingCardProps) {
   const attendees = members.filter((m) => meeting.attendeeIds.includes(m.id));
-  const visible = attendees.slice(0, 4);
-  const extra = attendees.length - visible.length;
   const actionCount = meeting.actionItems.length;
 
   const handleDelete = () => {
@@ -36,74 +33,81 @@ export function MeetingCard({ meeting, members = [], onPress, onDelete }: Meetin
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <View style={styles.topRow}>
-        <Text style={styles.date}>{formatMeetingDate(meeting.date)}</Text>
-        {onDelete && (
-          <Pressable onPress={handleDelete} hitSlop={8} style={styles.deleteBtn}>
-            <Ionicons name="trash-outline" size={16} color={SEMANTIC.red} />
-          </Pressable>
-        )}
-      </View>
-      <Text style={styles.title} numberOfLines={2}>{meeting.title}</Text>
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      
+      <View style={styles.content}>
+        <View style={styles.titleRow}>
+           <Text style={styles.title} numberOfLines={1}>{meeting.title}</Text>
+           <Text style={styles.date}>{formatMeetingDate(meeting.date)}</Text>
+        </View>
 
-      <View style={styles.footer}>
-        <View style={styles.avatarRow}>
-          {visible.map((m, idx) => (
-            <View key={m.id} style={{ marginLeft: idx > 0 ? -6 : 0 }}>
-              <Avatar uri={m.avatarUri} name={m.fullName} size="sm" />
-            </View>
-          ))}
-          {extra > 0 && (
-            <View style={styles.extra}>
-              <Text style={styles.extraText}>+{extra}</Text>
-            </View>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaText}>
+            // {attendees.length} ATTENDEES
+          </Text>
+          {actionCount > 0 && (
+            <Text style={styles.actionText}>
+               · {actionCount} ACTION ITEM{actionCount !== 1 ? 'S' : ''} PENDING
+            </Text>
           )}
         </View>
-        {actionCount > 0 && (
-          <View style={styles.actionBadge}>
-            <Ionicons name="checkmark-circle-outline" size={12} color={ACCENT.blue} />
-            <Text style={styles.actionText}>{actionCount} action{actionCount !== 1 ? 's' : ''}</Text>
-          </View>
-        )}
       </View>
+
+      {onDelete && (
+        <Pressable onPress={handleDelete} hitSlop={8} style={styles.deleteBtn}>
+          <Ionicons name="trash-outline" size={16} color={SEMANTIC.red} />
+        </Pressable>
+      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: CardDefaults.backgroundColor,
-    borderRadius: CardDefaults.borderRadius,
-    borderWidth: CardDefaults.borderWidth,
-    borderColor: CardDefaults.borderColor,
-    padding: CardDefaults.padding,
-    gap: 6,
-    marginBottom: 10,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
+    backgroundColor: BG.base,
   },
-  pressed: { opacity: 0.75 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  date: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interMedium,
-    color: ACCENT.blue,
+  pressed: { backgroundColor: BG.bg2 },
+  content: {
+    flex: 1,
+    gap: 4,
   },
-  deleteBtn: { padding: 4 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: {
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.interSemiBold,
-    color: TEXT.primary,
+    flex: 1,
+    fontSize: FontSize.body,
+    fontFamily: FontFamily.monoMedium, // "SPRINT PLANNING"
+    color: TEXT.t1,
+    textTransform: 'uppercase',
   },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
-  avatarRow: { flexDirection: 'row', alignItems: 'center' },
-  extra: {
-    marginLeft: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+  date: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t2,
+    marginLeft: 8,
   },
-  extraText: { fontSize: FontSize.xs, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
-  actionBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  actionText: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: ACCENT.blue },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaText: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
+  },
+  actionText: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: SEMANTIC.amber,
+  },
+  deleteBtn: { padding: 4, marginLeft: 12 },
 });
