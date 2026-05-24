@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -31,6 +31,12 @@ export default function ExploreScreen() {
   }, []);
 
   useEffect(() => { fetchProjects(search); }, [search]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void fetchProjects(search);
+    }, [search, fetchProjects])
+  );
 
   const handleJoin = async (projectId: string) => {
     if (!user) return;

@@ -208,6 +208,11 @@ export async function leaveProject(
     const project = mapProject(projectSnapshot.id, projectSnapshot.data());
     const remainingMemberIds = project.memberIds.filter((memberId) => memberId !== userId);
 
+    // Log activity FIRST while the user is still technically a member.
+    // If we remove them first, Firestore security rules will block logActivity
+    // because they are no longer in memberIds.
+    await logActivity(projectId, userId, 'member_left', 'project', projectId);
+
     await updateDoc(projectRef, {
       memberIds: arrayRemove(userId),
       status: remainingMemberIds.length === 0 ? 'archived' : project.status ?? 'active',
@@ -217,7 +222,6 @@ export async function leaveProject(
       projectIds: arrayRemove(projectId),
       updatedAt: serverTimestamp(),
     });
-    await logActivity(projectId, userId, 'member_left', 'project', projectId);
   } catch (error: any) {
     throw new Error(`Failed to leave project: ${error.message}`);
   }
