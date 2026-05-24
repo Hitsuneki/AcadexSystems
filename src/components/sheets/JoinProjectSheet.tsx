@@ -3,7 +3,7 @@ import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Toast } from '@/components/AcadexToast';
 import { AcadexBottomSheet } from '../AcadexBottomSheet';
 import { FormInput } from '../FormInput';
-import { ACCENT } from '@/constants/colors';
+import { ACCENT, TEXT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { validateInviteCode } from '@/utils/validation';
 import { joinProjectByCode } from '@/services/project.service';
@@ -54,7 +54,7 @@ export function JoinProjectSheet({ visible, onClose, userId, onJoined }: JoinPro
           style={styles.codeInput}
         />
         <Pressable onPress={handleJoin} disabled={loading} style={[styles.btn, loading && styles.btnDisabled]}>
-          {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.btnText}>Join</Text>}
+          {loading ? <ActivityIndicator size="small" color={TEXT.inverse} /> : <Text style={styles.btnText}>JOIN</Text>}
         </Pressable>
       </View>
     </AcadexBottomSheet>
@@ -63,8 +63,8 @@ export function JoinProjectSheet({ visible, onClose, userId, onJoined }: JoinPro
 
 const styles = StyleSheet.create({
   form: { gap: 16, paddingTop: 16 },
-  codeInput: { textAlign: 'center', fontSize: 22, letterSpacing: 8, fontFamily: FontFamily.soraSemiBold },
-  btn: { backgroundColor: ACCENT.blue, borderRadius: 8, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+  codeInput: { textAlign: 'center', fontSize: 22, letterSpacing: 0, fontFamily: FontFamily.mono },
+  btn: { backgroundColor: ACCENT.signal, borderRadius: 0, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
   btnDisabled: { opacity: 0.6 },
-  btnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFFFFF' },
+  btnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse },
 });

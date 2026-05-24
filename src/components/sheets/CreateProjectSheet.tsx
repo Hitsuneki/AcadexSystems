@@ -60,12 +60,12 @@ export function CreateProjectSheet({ visible, onClose, userId, onCreated }: Crea
   return (
     <AcadexBottomSheet visible={visible} onClose={onClose} title="New project" snapPoints={['80%']} scrollable>
       <View style={styles.form}>
-        <FormInput label="Project name" value={name} onChangeText={setName} placeholder="e.g. Mobile App Research" error={errors.name} />
-        <FormInput label="Description (optional)" value={description} onChangeText={setDescription} placeholder="What is this project about?" multiline numberOfLines={3} />
-        <FormInput label="Subject tag" value={subjectTag} onChangeText={setSubjectTag} placeholder="e.g. CS101, Design, Research" error={errors.subjectTag} />
+        <FormInput label="Project name" value={name} onChangeText={setName} placeholder="MOBILE APP RESEARCH" error={errors.name} />
+        <FormInput label="Description (optional)" value={description} onChangeText={setDescription} placeholder="PROJECT BRIEF" multiline numberOfLines={3} />
+        <FormInput label="Subject tag" value={subjectTag} onChangeText={setSubjectTag} placeholder="CS101 / DESIGN / RESEARCH" error={errors.subjectTag} />
 
         <View style={styles.section}>
-          <Text style={styles.label}>Cover color</Text>
+          <Text style={styles.label}>Signal slot</Text>
           <View style={styles.colorRow}>
             {COVER_COLORS.map((c) => (
               <Pressable key={c} onPress={() => setCoverColor(c)} style={[styles.colorCircle, { backgroundColor: c }, coverColor === c && styles.colorCircleSelected]} />
@@ -75,14 +75,14 @@ export function CreateProjectSheet({ visible, onClose, userId, onCreated }: Crea
 
         <View style={styles.toggleRow}>
           <Text style={styles.toggleLabel}>Make project public</Text>
-          <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: ACCENT.blue, false: BG.bg4 }} thumbColor="#FFFFFF" />
+          <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: ACCENT.signal, false: BG.bg4 }} thumbColor={TEXT.primary} />
         </View>
 
         <Pressable onPress={handleCreate} disabled={loading} style={[styles.createBtn, loading && styles.createBtnDisabled]}>
           {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={TEXT.inverse} />
           ) : (
-            <Text style={styles.createBtnText}>Create project</Text>
+            <Text style={styles.createBtnText}>CREATE PROJECT</Text>
           )}
         </Pressable>
       </View>
@@ -93,13 +93,13 @@ export function CreateProjectSheet({ visible, onClose, userId, onCreated }: Crea
 const styles = StyleSheet.create({
   form: { gap: 16, paddingTop: 16 },
   section: { gap: 8 },
-  label: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
+  label: { fontSize: FontSize.xs, fontFamily: FontFamily.mono, color: TEXT.secondary, textTransform: 'uppercase' },
   colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  colorCircle: { width: 32, height: 32, borderRadius: 16 },
-  colorCircleSelected: { borderWidth: 2, borderColor: '#FFFFFF', transform: [{ scale: 1.15 }] },
+  colorCircle: { width: 32, height: 32, borderRadius: 0 },
+  colorCircleSelected: { borderWidth: 2, borderColor: TEXT.primary, transform: [{ scale: 1.08 }] },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggleLabel: { fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
-  createBtn: { backgroundColor: ACCENT.blue, borderRadius: 8, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: 8 },
+  toggleLabel: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.primary, textTransform: 'uppercase' },
+  createBtn: { backgroundColor: ACCENT.signal, borderRadius: 0, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: 8 },
   createBtnDisabled: { opacity: 0.6 },
-  createBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFFFFF' },
+  createBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse },
 });

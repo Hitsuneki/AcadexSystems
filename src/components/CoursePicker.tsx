@@ -22,7 +22,7 @@ interface CoursePickerProps {
 }
 
 export function CoursePicker({
-  label = 'Course / Program',
+  label = 'COURSE.FIELD',
   value,
   onChange,
   error,
@@ -60,7 +60,7 @@ export function CoursePicker({
         <View style={styles.panel}>
           <TextInput
             style={styles.search}
-            placeholder="Search programs..."
+            placeholder="SEARCH_PROGRAMS > _"
             placeholderTextColor={InputDefaults.placeholderTextColor}
             value={search}
             onChangeText={setSearch}
@@ -72,7 +72,7 @@ export function CoursePicker({
             showsVerticalScrollIndicator>
             {showCustomOnly && (
               <View style={styles.group}>
-                <Text style={styles.groupLabel}>Your current program</Text>
+                <Text style={styles.groupLabel}>// YOUR CURRENT PROGRAM</Text>
                 <Pressable
                   onPress={() => {
                     onChange(value);
@@ -85,43 +85,45 @@ export function CoursePicker({
               </View>
             )}
             {filteredGroups.map((group) => (
-              <View key={group.id} style={styles.group}>
-                <Text style={styles.groupLabel}>{group.label}</Text>
-                {group.programs.map((program) => {
-                  const selected = value === program;
-                  return (
-                    <Pressable
-                      key={program}
-                      onPress={() => {
-                        onChange(program);
-                        setExpanded(false);
-                        setSearch('');
-                      }}
-                      style={[styles.option, selected && styles.optionActive]}>
-                      <Text style={[styles.optionText, selected && styles.optionTextActive]}>{program}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+               <View key={group.id} style={styles.group}>
+                 <Text style={styles.groupLabel}>// {group.label.toUpperCase()}</Text>
+                 {group.programs.map((program) => {
+                   const selected = value === program;
+                   return (
+                     <Pressable
+                       key={program}
+                       onPress={() => {
+                         onChange(program);
+                         setExpanded(false);
+                         setSearch('');
+                       }}
+                       style={[styles.option, selected && styles.optionActive]}>
+                       <Text style={[styles.optionText, selected && styles.optionTextActive]}>{program}</Text>
+                     </Pressable>
+                   );
+                 })}
+               </View>
             ))}
             {filteredGroups.length === 0 && (
-              <Text style={styles.empty}>No programs match &quot;{search}&quot;</Text>
+              <Text style={styles.empty}>// NO.DATA.FOUND</Text>
             )}
           </ScrollView>
         </View>
       )}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error && <Text style={styles.error}>ERR: {error}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: 6 },
+  wrapper: { marginBottom: 14 },
   label: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interMedium,
-    color: TEXT.secondary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
+    textTransform: 'uppercase',
+    marginBottom: 6,
   },
   trigger: {
     flexDirection: 'row',
@@ -136,75 +138,78 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 44,
   },
-  triggerSelected: { borderColor: ACCENT.blueBorder },
+  triggerSelected: { borderColor: InputDefaults.borderColor },
   triggerError: { borderColor: SEMANTIC.red },
   triggerText: {
     flex: 1,
     fontSize: InputDefaults.fontSize,
     fontFamily: FontFamily.interRegular,
-    color: TEXT.primary,
+    color: InputDefaults.color,
   },
-  triggerPlaceholder: { color: TEXT.muted },
+  triggerPlaceholder: { color: InputDefaults.placeholderTextColor },
   chevron: {
-    fontSize: FontSize.xs,
-    color: TEXT.muted,
+    fontSize: FontSize.monoSm,
+    color: TEXT.t3,
   },
   panel: {
     borderRadius: InputDefaults.borderRadius,
     borderWidth: InputDefaults.borderWidth,
-    borderColor: BORDER.default,
+    borderColor: BORDER.dim,
     backgroundColor: BG.bg2,
+    marginTop: 4,
     overflow: 'hidden',
   },
   search: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER.default,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.primary,
+    paddingVertical: 12,
+    fontSize: FontSize.body,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t1,
   },
   list: { maxHeight: 280 },
-  group: { paddingVertical: 8, paddingHorizontal: 10, gap: 4 },
+  group: { paddingVertical: 8, gap: 4 },
   groupLabel: {
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.interSemiBold,
-    color: TEXT.muted,
+    fontSize: FontSize.label,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 1.5,
+    marginHorizontal: 12,
+    marginTop: 8,
     marginBottom: 4,
   },
   option: {
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
+    backgroundColor: BG.bg2,
   },
   optionActive: {
-    borderColor: ACCENT.blue,
-    backgroundColor: ACCENT.blueDim,
+    backgroundColor: BG.bg3,
   },
   optionText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.body,
     fontFamily: FontFamily.interRegular,
-    color: TEXT.secondary,
+    color: TEXT.t2,
   },
   optionTextActive: {
     fontFamily: FontFamily.interMedium,
-    color: ACCENT.blue,
+    color: ACCENT.primary,
   },
   empty: {
     padding: 16,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.muted,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
     textAlign: 'center',
   },
   error: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
+    marginTop: 6,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
     color: SEMANTIC.red,
   },
 });

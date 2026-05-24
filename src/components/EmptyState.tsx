@@ -1,25 +1,22 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { TEXT, ACCENT } from '@/constants/colors';
+import { BG, TEXT, ACCENT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
 interface EmptyStateProps {
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: string; // unused but kept for prop compat
   title: string;
   subtitle?: string;
   action?: string;
   onAction?: () => void;
 }
 
-export function EmptyState({ icon = 'folder-open-outline', title, subtitle, action, onAction }: EmptyStateProps) {
+export function EmptyState({ title, action, onAction }: EmptyStateProps) {
+  // Use the requested technical format
   return (
     <View style={styles.container}>
-      <View style={styles.iconWrap}>
-        <Ionicons name={icon} size={48} color={TEXT.muted} />
-      </View>
-      <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text style={styles.label}>// NO.DATA.FOUND</Text>
+      <Text style={styles.display}>[ EMPTY ]</Text>
       {action && onAction && (
         <Pressable onPress={onAction} style={styles.button}>
           <Text style={styles.buttonText}>{action}</Text>
@@ -35,41 +32,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    paddingVertical: 48,
-    gap: 10,
+    paddingVertical: 64,
+    gap: 16,
+    // Add dot matrix background pattern here if image asset exists, 
+    // for now we stick to dark background
   },
-  iconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  label: {
+    fontSize: FontSize.label,
+    fontFamily: FontFamily.interMedium,
+    color: TEXT.t3,
+    letterSpacing: 1.5,
+  },
+  display: {
+    fontSize: FontSize.monoLg,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t2,
     marginBottom: 8,
   },
-  title: {
-    fontSize: FontSize.xl,
-    fontFamily: FontFamily.soraSemiBold,
-    color: TEXT.primary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
   button: {
-    marginTop: 8,
-    backgroundColor: ACCENT.blue,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
   },
   buttonText: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interSemiBold,
-    color: '#FFFFFF',
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: ACCENT.primary,
   },
 });

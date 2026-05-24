@@ -290,7 +290,7 @@ export default function TaskDetailScreen() {
             multiline
           />
           <Pressable onPress={handleSaveTask} disabled={savingTask} style={styles.saveBtn}>
-            {savingTask ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Text style={styles.saveBtnText}>Save</Text>}
+            {savingTask ? <ActivityIndicator size="small" color={ACCENT.primary} /> : <Text style={styles.saveBtnText}>Save</Text>}
           </Pressable>
         </View>
 
@@ -324,9 +324,9 @@ export default function TaskDetailScreen() {
           </View>
 
           <Pressable onPress={handleComplete} disabled={completing || task.status === 'done'} style={[styles.completeBtn, (completing || task.status === 'done') && styles.btnDisabled]}>
-            {completing ? <ActivityIndicator size="small" color="#FFF" /> : (
+            {completing ? <ActivityIndicator size="small" color={TEXT.inverse} /> : (
               <>
-                <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                <Ionicons name="checkmark-circle" size={18} color={TEXT.inverse} />
                 <Text style={styles.completeBtnText}>{task.status === 'done' ? 'Completed' : 'Mark complete'}</Text>
               </>
             )}
@@ -356,7 +356,7 @@ export default function TaskDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Assignees</Text>
-              {savingAssignees && <ActivityIndicator size="small" color={ACCENT.blue} />}
+              {savingAssignees && <ActivityIndicator size="small" color={ACCENT.primary} />}
             </View>
             {members.length === 0 ? (
               <Text style={styles.hint}>No project members loaded</Text>
@@ -374,7 +374,7 @@ export default function TaskDetailScreen() {
                       <Text style={[styles.memberChipText, selected && styles.memberChipTextSelected]} numberOfLines={1}>
                         {m.id === user?.uid ? 'You' : m.fullName.split(' ')[0]}
                       </Text>
-                      {selected && <Ionicons name="checkmark" size={14} color={ACCENT.blue} />}
+                      {selected && <Ionicons name="checkmark" size={14} color={ACCENT.primary} />}
                     </Pressable>
                   );
                 })}
@@ -388,15 +388,15 @@ export default function TaskDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Attachments</Text>
-              {uploadingFile && <ActivityIndicator size="small" color={ACCENT.blue} />}
+              {uploadingFile && <ActivityIndicator size="small" color={ACCENT.primary} />}
             </View>
             <View style={styles.attachmentActions}>
               <Pressable onPress={handleUploadImage} disabled={uploadingFile} style={styles.attachBtn}>
-                <Ionicons name="image-outline" size={16} color={ACCENT.blue} />
+                <Ionicons name="image-outline" size={16} color={ACCENT.primary} />
                 <Text style={styles.attachBtnText}>Image</Text>
               </Pressable>
               <Pressable onPress={handleUploadFile} disabled={uploadingFile} style={styles.attachBtn}>
-                <Ionicons name="cloud-upload-outline" size={16} color={ACCENT.blue} />
+                <Ionicons name="cloud-upload-outline" size={16} color={ACCENT.primary} />
                 <Text style={styles.attachBtnText}>File</Text>
               </Pressable>
             </View>
@@ -421,7 +421,7 @@ export default function TaskDetailScreen() {
                 {taskFiles.filter(f => !isImageUrl(f.url)).map((file) => (
                   <View key={file.url} style={styles.fileRow}>
                     <Pressable onPress={() => Linking.openURL(file.url)} style={styles.fileLink}>
-                      <Ionicons name="document-outline" size={20} color={ACCENT.blue} />
+                      <Ionicons name="document-outline" size={20} color={ACCENT.primary} />
                       <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
                       <Ionicons name="open-outline" size={16} color={TEXT.muted} />
                     </Pressable>
@@ -455,7 +455,7 @@ export default function TaskDetailScreen() {
                 editable={!addingCheck}
               />
               <Pressable onPress={handleAddCheck} disabled={addingCheck} style={styles.addCheckBtn}>
-                {addingCheck ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Ionicons name="add" size={18} color={ACCENT.blue} />}
+                {addingCheck ? <ActivityIndicator size="small" color={ACCENT.primary} /> : <Ionicons name="add" size={18} color={ACCENT.primary} />}
               </Pressable>
             </View>
           </View>
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 12, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
   titleInput: { flex: 1, fontSize: FontSize.xl, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary, lineHeight: 26 },
   saveBtn: { paddingHorizontal: 10, paddingVertical: 4 },
-  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
+  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.primary },
   container: { padding: 16, gap: 20, paddingBottom: 40 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   dueDate: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
@@ -497,22 +497,22 @@ const styles = StyleSheet.create({
   columnChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: BORDER.default,
     backgroundColor: BG.bg2,
   },
-  columnChipActive: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
+  columnChipActive: { borderColor: ACCENT.primary, backgroundColor: ACCENT.primaryDim },
   columnChipText: { fontSize: FontSize.xs, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
-  columnChipTextActive: { color: ACCENT.blue },
+  columnChipTextActive: { color: ACCENT.primary },
   completeBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: SEMANTIC.green, borderRadius: 8, paddingVertical: 13, minHeight: 48,
+    backgroundColor: SEMANTIC.green, borderRadius: 0, paddingVertical: 13, minHeight: 48,
   },
   btnDisabled: { opacity: 0.6 },
-  completeBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFF' },
+  completeBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse, textTransform: 'uppercase' },
   descInput: { backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.focusedBorderColor, color: TEXT.primary, padding: 12, fontSize: FontSize.md, fontFamily: FontFamily.interRegular, minHeight: 80 },
-  descDisplay: { padding: 12, backgroundColor: BG.bg2, borderRadius: 8, minHeight: 60, justifyContent: 'center' },
+  descDisplay: { padding: 12, backgroundColor: BG.bg2, borderRadius: 0, minHeight: 60, justifyContent: 'center' },
   descText: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.secondary, lineHeight: 20 },
   descPlaceholder: { color: TEXT.muted },
   hint: { fontSize: FontSize.sm, fontFamily: FontFamily.interRegular, color: TEXT.muted },
@@ -523,15 +523,15 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: BORDER.default,
     backgroundColor: BG.bg2,
     maxWidth: '48%',
   },
-  memberChipSelected: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
+  memberChipSelected: { borderColor: ACCENT.primary, backgroundColor: ACCENT.primaryDim },
   memberChipText: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary, flexShrink: 1 },
-  memberChipTextSelected: { color: ACCENT.blue },
+  memberChipTextSelected: { color: ACCENT.primary },
   attachmentActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   attachBtn: {
     flexDirection: 'row',
@@ -539,30 +539,30 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: ACCENT.blueDim,
+    borderRadius: 0,
+    backgroundColor: ACCENT.primaryDim,
   },
-  attachBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
+  attachBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: ACCENT.primary },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   imageTile: {
     width: '31.5%',
     minWidth: 96,
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 0,
     overflow: 'hidden',
     backgroundColor: BG.bg2,
     borderWidth: 0.5,
     borderColor: BORDER.default,
   },
   imagePreview: { width: '100%', height: '100%' },
-  removeImageBtn: { position: 'absolute', top: -6, right: -6, backgroundColor: BG.bg0, borderRadius: 12 },
+  removeImageBtn: { position: 'absolute', top: -6, right: -6, backgroundColor: BG.bg0, borderRadius: 0 },
   fileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     padding: 12,
     backgroundColor: BG.bg2,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 0.5,
     borderColor: BORDER.default,
   },
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   checkItemDone: { textDecorationLine: 'line-through', color: TEXT.muted },
   addCheckRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addCheckInput: { flex: 1, backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.borderColor, color: TEXT.primary, paddingHorizontal: 12, paddingVertical: 8, fontSize: FontSize.md, fontFamily: FontFamily.interRegular },
-  addCheckBtn: { width: 36, height: 36, borderRadius: 8, backgroundColor: ACCENT.blueDim, alignItems: 'center', justifyContent: 'center' },
-  cancelBtn: { backgroundColor: SEMANTIC.redDim, borderWidth: 1, borderColor: SEMANTIC.redBorder, borderRadius: 8, padding: 14, alignItems: 'center' },
+  addCheckBtn: { width: 36, height: 36, borderRadius: 0, backgroundColor: ACCENT.primaryDim, alignItems: 'center', justifyContent: 'center' },
+  cancelBtn: { backgroundColor: SEMANTIC.redDim, borderWidth: 1, borderColor: SEMANTIC.redBorder, borderRadius: 0, padding: 14, alignItems: 'center' },
   cancelBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: SEMANTIC.red },
 });

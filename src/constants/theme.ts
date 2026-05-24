@@ -2,6 +2,7 @@
  * ACADEX Design System — unified theme constants
  */
 import { Platform } from 'react-native';
+import { ACCENT, BG, BORDER, TEXT } from './colors';
 
 // Re-export all ACADEX token namespaces
 export { BG, BORDER, TEXT, ACCENT, SEMANTIC, PRIORITY_COLORS, COLUMN_COLORS, FILE_TYPE_COLORS, COVER_COLORS } from './colors';
@@ -17,7 +18,7 @@ export const Spacing = {
   '2xl': 32,
   '3xl': 48,
   '4xl': 64,
-  // Legacy aliases (kept for compatibility)
+  // Legacy aliases
   half: 2,
   one: 4,
   two: 8,
@@ -29,22 +30,22 @@ export const Spacing = {
 
 // ─── Card defaults ────────────────────────────────────────────────────────────
 export const CardDefaults = {
-  borderRadius: 8,
-  borderWidth: 0.5,
-  borderColor: 'rgba(255,255,255,0.07)',
-  backgroundColor: '#111111',
-  padding: 12,
+  borderRadius: 0,
+  borderWidth: 1,
+  borderColor: BORDER.dim,
+  backgroundColor: BG.bg1,
+  padding: 14,
 } as const;
 
 // ─── Input defaults ───────────────────────────────────────────────────────────
 export const InputDefaults = {
-  backgroundColor: '#1E1E1E',
-  borderRadius: 7,
+  backgroundColor: BG.bg4,
+  borderRadius: 0,
   borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.07)',
-  focusedBorderColor: 'rgba(37,99,235,0.40)',
-  color: '#E8E8E8',
-  placeholderTextColor: '#555555',
+  borderColor: BORDER.dim,
+  focusedBorderColor: ACCENT.b,
+  color: TEXT.t1,
+  placeholderTextColor: TEXT.t4,
   padding: 12,
   fontSize: 13,
 } as const;
@@ -53,7 +54,7 @@ export const InputDefaults = {
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
 
-// ─── Legacy compatibility (for any remaining old imports) ─────────────────────
+// ─── Legacy compatibility ─────────────────────
 export const Colors = {
   light: {
     text: '#000000',
@@ -64,10 +65,10 @@ export const Colors = {
   },
   dark: {
     text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    background: '#0A0A0A',
+    backgroundElement: '#0F0F0F',
+    backgroundSelected: '#141414',
+    textSecondary: '#888888',
   },
 } as const;
 

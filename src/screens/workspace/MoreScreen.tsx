@@ -28,7 +28,7 @@ export default function MoreScreen({ projectId }: MoreScreenProps) {
           onPress={() => router.push(`/project/${projectId}/${item.route}`)}
           style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}>
           <View style={styles.iconWrap}>
-            <Ionicons name={item.icon} size={20} color={ACCENT.blue} />
+            <Ionicons name={item.icon} size={20} color={ACCENT.signal} />
           </View>
           <Text style={styles.label}>{item.label}</Text>
           <Ionicons name="chevron-forward" size={16} color={TEXT.muted} />
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   itemPressed: { opacity: 0.75 },
-  iconWrap: { width: 36, height: 36, borderRadius: 8, backgroundColor: ACCENT.blueDim, alignItems: 'center', justifyContent: 'center' },
+  iconWrap: { width: 36, height: 36, borderRadius: 0, backgroundColor: ACCENT.signalDim, alignItems: 'center', justifyContent: 'center' },
   label: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
 });

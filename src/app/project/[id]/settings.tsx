@@ -76,12 +76,12 @@ export default function ProjectSettingsScreen() {
             <FormInput label="Subject tag" value={subjectTag} onChangeText={setSubjectTag} />
             <View style={styles.toggleRow}>
               <Text style={styles.toggleLabel}>Public project</Text>
-              <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: ACCENT.blue, false: BG.bg4 }} thumbColor="#FFFFFF" />
+              <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: ACCENT.primary, false: BG.bg4 }} thumbColor={TEXT.primary} />
             </View>
           </View>
 
           <Pressable onPress={handleSave} disabled={saving} style={[styles.saveBtn, saving && styles.btnDisabled]}>
-            {saving ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.saveBtnText}>Save changes</Text>}
+            {saving ? <ActivityIndicator size="small" color={TEXT.inverse} /> : <Text style={styles.saveBtnText}>SAVE CHANGES</Text>}
           </Pressable>
 
           {/* Danger zone */}
@@ -106,19 +106,19 @@ export default function ProjectSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
+  safe: { flex: 1, backgroundColor: BG.base },
   flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.dim },
   title: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
   container: { padding: 16, gap: 24, paddingBottom: 40 },
   form: { gap: 16 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
   toggleLabel: { fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
-  saveBtn: { backgroundColor: ACCENT.blue, borderRadius: 8, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
+  saveBtn: { backgroundColor: ACCENT.primary, borderRadius: 0, paddingVertical: 14, alignItems: 'center', minHeight: 48 },
   btnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: '#FFF' },
+  saveBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.mono, color: TEXT.inverse, textTransform: 'uppercase' },
   dangerZone: { gap: 12 },
   dangerTitle: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: SEMANTIC.red, textTransform: 'uppercase', letterSpacing: 0.8 },
-  dangerBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: SEMANTIC.redDim, borderRadius: 8, borderWidth: 0.5, borderColor: SEMANTIC.redBorder, padding: 14 },
+  dangerBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: SEMANTIC.redDim, borderRadius: 0, borderWidth: 0.5, borderColor: SEMANTIC.redBorder, padding: 14 },
   dangerBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: SEMANTIC.red },
 });

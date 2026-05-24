@@ -5,10 +5,9 @@ import {
   StyleSheet,
   Text,
   View,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BG, BORDER, TEXT } from '@/constants/colors';
+import { BG, BORDER, TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
 type ToastType = 'success' | 'error' | 'info';
@@ -24,17 +23,10 @@ interface ToastState extends ToastShowParams {
   visible: boolean;
 }
 
-const BORDER_COLORS: Record<ToastType, string> = {
-  success: '#10B981',
-  error: '#EF4444',
-  info: '#2563EB',
-};
-
 const DEFAULT_VISIBILITY = 4000;
 
 let toastApi: { show: (p: ToastShowParams) => void; hide: () => void } | null = null;
 
-/** Drop-in replacement for `react-native-toast-message` Toast.show(). */
 export const Toast = {
   show(params: ToastShowParams) {
     toastApi?.show(params);
@@ -50,27 +42,23 @@ function ToastContent({
   text2,
   onPress,
 }: ToastShowParams & { onPress?: () => void }) {
+  
+  const isError = type === 'error';
+  const prefix = isError ? 'ERR:' : type === 'info' ? 'SYS:' : 'OK:';
+  const color = isError ? SEMANTIC.red : type === 'info' ? TEXT.t1 : ACCENT.primary;
+
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.toast, { borderLeftColor: BORDER_COLORS[type] }]}>
-      <View style={styles.content}>
-        {text1 ? (
-          <Text style={styles.text1} numberOfLines={2}>
-            {text1}
-          </Text>
-        ) : null}
-        {text2 ? (
-          <Text style={styles.text2} numberOfLines={3}>
-            {text2}
-          </Text>
-        ) : null}
-      </View>
+      style={[styles.toast, { borderColor: isError ? SEMANTIC.red : BORDER.dim }]}>
+      <Text style={[styles.text, { color }]}>
+        {prefix} {text1}
+      </Text>
+      {text2 && <Text style={[styles.text, { color, marginTop: 4 }]}>{text2}</Text>}
     </Pressable>
   );
 }
 
-/** Mount once in the root layout (replaces react-native-toast-message). */
 export function AcadexToastHost() {
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState<ToastState>({ visible: false });
@@ -134,36 +122,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toast: {
-    flexDirection: 'row',
-    minHeight: 56,
+    minHeight: 40,
     width: 340,
     maxWidth: '92%',
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    backgroundColor: BG.bg2,
-    borderWidth: 0.5,
-    borderColor: BORDER.default,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0 4px 12px rgba(0, 0, 0, 0.45)' }
-      : Platform.OS === 'android'
-        ? { elevation: 4 }
-        : {}),
-  },
-  content: {
-    flex: 1,
+    borderRadius: 0,
+    backgroundColor: BG.bg1,
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
     justifyContent: 'center',
   },
-  text1: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.interMedium,
-    color: TEXT.primary,
-    marginBottom: 2,
-  },
-  text2: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.secondary,
+  text: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
   },
 });

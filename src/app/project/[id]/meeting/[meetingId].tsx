@@ -24,7 +24,7 @@ import type { ActionItem, ActionItemStatus } from '@/types';
 const ACTION_STATUS: Record<ActionItemStatus, { label: string; color: string; bg: string }> = {
   pending: { label: 'Pending', color: SEMANTIC.amber, bg: SEMANTIC.amberDim },
   done: { label: 'Done', color: SEMANTIC.green, bg: SEMANTIC.greenDim },
-  pushed: { label: 'On board', color: ACCENT.blue, bg: ACCENT.blueDim },
+  pushed: { label: 'On board', color: ACCENT.signal, bg: ACCENT.signalDim },
 };
 
 export default function MeetingDetailScreen() {
@@ -137,7 +137,7 @@ export default function MeetingDetailScreen() {
             </Pressable>
           )}
           <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
-            {saving ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Text style={styles.saveBtnText}>Save</Text>}
+            {saving ? <ActivityIndicator size="small" color={ACCENT.signal} /> : <Text style={styles.saveBtnText}>Save</Text>}
           </Pressable>
         </View>
       </View>
@@ -148,7 +148,7 @@ export default function MeetingDetailScreen() {
 
         {/* Date */}
         <Pressable onPress={() => setShowDate(true)} style={styles.dateRow}>
-          <Ionicons name="calendar-outline" size={16} color={ACCENT.blue} />
+          <Ionicons name="calendar-outline" size={16} color={ACCENT.signal} />
           <Text style={styles.dateText}>{formatMeetingDate(date.toISOString())}</Text>
         </Pressable>
         {showDate && (
@@ -223,7 +223,7 @@ export default function MeetingDetailScreen() {
               }}
               style={styles.addActionBtn}
             >
-              <Ionicons name="add" size={20} color={ACCENT.blue} />
+              <Ionicons name="add" size={20} color={ACCENT.signal} />
             </Pressable>
           </View>
         </View>
@@ -240,25 +240,25 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
   headerIconBtn: { padding: 8 },
   saveBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
+  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.signal },
   container: { padding: 16, gap: 20, paddingBottom: 40 },
   titleInput: { fontSize: FontSize.xl, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, backgroundColor: ACCENT.blueDim, borderRadius: 8 },
-  dateText: { fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: ACCENT.blue },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, backgroundColor: ACCENT.signalDim, borderRadius: 0 },
+  dateText: { fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: ACCENT.signal },
   section: { gap: 10 },
   sectionTitle: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: TEXT.secondary, textTransform: 'uppercase', letterSpacing: 0.8 },
   attendeesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  attendeeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: BORDER.default, backgroundColor: BG.bg2 },
-  attendeeChipActive: { borderColor: ACCENT.blue, backgroundColor: ACCENT.blueDim },
+  attendeeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 0, borderWidth: 1, borderColor: BORDER.default, backgroundColor: BG.bg2 },
+  attendeeChipActive: { borderColor: ACCENT.signal, backgroundColor: ACCENT.signalDim },
   attendeeName: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
-  attendeeNameActive: { color: ACCENT.blue },
+  attendeeNameActive: { color: ACCENT.signal },
   notesInput: { backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.borderColor, color: TEXT.primary, padding: 12, fontSize: FontSize.md, fontFamily: FontFamily.interRegular, minHeight: 100 },
   actionItem: { backgroundColor: CardDefaults.backgroundColor, borderRadius: CardDefaults.borderRadius, borderWidth: CardDefaults.borderWidth, borderColor: CardDefaults.borderColor, padding: 12, gap: 8 },
   actionBody: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.secondary, lineHeight: 20 },
   actionFooter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  pushBtn: { paddingHorizontal: 10, paddingVertical: 4, backgroundColor: ACCENT.blueDim, borderRadius: 6 },
-  pushBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
+  pushBtn: { paddingHorizontal: 10, paddingVertical: 4, backgroundColor: ACCENT.signalDim, borderRadius: 0 },
+  pushBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: ACCENT.signal },
   addActionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addActionInput: { flex: 1, backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.borderColor, color: TEXT.primary, padding: 12, fontSize: FontSize.md, fontFamily: FontFamily.interRegular },
-  addActionBtn: { width: 44, height: 44, borderRadius: 8, backgroundColor: ACCENT.blueDim, alignItems: 'center', justifyContent: 'center' },
+  addActionBtn: { width: 44, height: 44, borderRadius: 0, backgroundColor: ACCENT.signalDim, alignItems: 'center', justifyContent: 'center' },
 });

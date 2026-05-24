@@ -151,6 +151,9 @@ export function AcadexBottomSheet({
 
   const ContentWrapper = scrollable ? BottomSheetScrollView : BottomSheetView;
 
+  // Custom handle to remove the default pill
+  const renderHandle = () => <View style={{ height: 12 }} />;
+
   return (
     <BottomSheetLib
       ref={sheetRef}
@@ -161,13 +164,13 @@ export function AcadexBottomSheet({
       backdropComponent={renderBackdrop}
       backgroundComponent={AcadexSheetBackground}
       backgroundStyle={styles.background}
-      handleIndicatorStyle={styles.handle}>
+      handleComponent={renderHandle}>
       <ContentWrapper contentContainerStyle={scrollable ? styles.scrollContent : undefined}>
         {title && (
           <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <Text style={styles.closeBtn}>✕</Text>
+            <Text style={styles.title}>// {title.toUpperCase()}</Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <Text style={styles.closeBtn}>×</Text>
             </Pressable>
           </View>
         )}
@@ -178,18 +181,14 @@ export function AcadexBottomSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: 'rgba(0,0,0,0.55)' },
-  sheetBackground: {
-    backgroundColor: BG.bg1,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
+  backdrop: { backgroundColor: 'rgba(0,0,0,0.65)' },
+  sheetBackground: { backgroundColor: BG.bg1 },
   background: {
     backgroundColor: BG.bg1,
-    borderTopWidth: 0.5,
-    borderTopColor: BORDER.default,
+    borderTopWidth: 2,
+    borderTopColor: '#00FF85',
+    borderRadius: 0,
   },
-  handle: { backgroundColor: 'rgba(255,255,255,0.2)', width: 36 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -197,18 +196,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 4,
     paddingBottom: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER.default,
   },
   title: {
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.soraSemiBold,
-    color: TEXT.primary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t1,
+    letterSpacing: 1.5,
   },
   closeBtn: {
-    fontSize: FontSize.lg,
-    color: TEXT.secondary,
+    fontSize: FontSize.heading,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t2,
+    lineHeight: 20,
   },
   content: { paddingHorizontal: 20, paddingBottom: 32 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
 });
+

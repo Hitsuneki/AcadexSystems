@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { Toast } from '@/components/AcadexToast';
 
-import { Avatar } from '@/components/Avatar';
-import { Badge } from '@/components/Badge';
 import { ProjectCard } from '@/components/ProjectCard';
 import { SectionHeader } from '@/components/SectionHeader';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -16,13 +13,7 @@ import { useUserProjects } from '@/hooks/use-user-projects';
 import { signOutUser, deleteUserAccount } from '@/services/auth.service';
 import { BG, TEXT, ACCENT, BORDER, SEMANTIC } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
-
-const ROLE_COLORS = {
-  Student: { color: '#38BDF8', bg: 'rgba(56,189,248,0.12)' },
-  Teacher: { color: '#A78BFA', bg: 'rgba(167,139,250,0.12)' },
-  Researcher: { color: '#34D399', bg: 'rgba(52,211,153,0.12)' },
-  Professional: { color: '#FB923C', bg: 'rgba(251,146,60,0.12)' },
-};
+import { EmptyState } from '@/components/EmptyState';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -33,8 +24,6 @@ export default function ProfileScreen() {
   const [deleting, setDeleting] = useState(false);
 
   if (!profile) return <LoadingSpinner fullscreen />;
-
-  const roleColor = ROLE_COLORS[profile.roleLabel] ?? ROLE_COLORS.Student;
 
   const performSignOut = async () => {
     setSigningOut(true);
@@ -57,14 +46,9 @@ export default function ProfileScreen() {
       }
       return;
     }
-
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+    Alert.alert('LOGOUT', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: () => void performSignOut(),
-      },
+      { text: 'Log out', style: 'destructive', onPress: () => void performSignOut() },
     ]);
   };
 
@@ -93,127 +77,177 @@ export default function ProfileScreen() {
       }
       return;
     }
-
-    Alert.alert('Delete Account', 'Are you sure you want to completely delete your account? This cannot be undone.', [
+    Alert.alert('TERMINATE ACCOUNT', 'Are you sure you want to completely delete your account? This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => void performDeleteAccount(),
-      },
+      { text: 'Delete', style: 'destructive', onPress: () => void performDeleteAccount() },
     ]);
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+        
+        <SectionHeader title="IDENTITY.MODULE" />
+
         <View style={styles.profileSection}>
-          <Avatar uri={profile.avatarUri} name={profile.fullName} size="xl" />
+          <View style={styles.avatarPlaceholder}>
+             <Text style={styles.avatarInitials}>
+               {profile.fullName ? profile.fullName.trim()[0]?.toUpperCase() : "?"}
+             </Text>
+          </View>
           <View style={styles.profileInfo}>
             <Text style={styles.name}>{profile.fullName}</Text>
             <Text style={styles.course}>{profile.course}</Text>
-            <Badge label={profile.roleLabel} color={roleColor.color} bg={roleColor.bg} />
+            <Text style={styles.roleTag}>[{profile.roleLabel.toUpperCase()}]</Text>
           </View>
           <Pressable onPress={() => router.push('/(main)/edit-profile')} style={styles.editBtn} hitSlop={8}>
-            <Ionicons name="pencil-outline" size={16} color={TEXT.secondary} />
+            <Text style={styles.editBtnText}>EDIT</Text>
           </Pressable>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{projects.length}</Text>
-            <Text style={styles.statLabel}>Projects</Text>
+        <View style={styles.readoutPanel}>
+          <View style={styles.readoutHeader}>
+            <Text style={styles.readoutHeaderText}>SYS.READOUT ● ● ●</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{profile.completedTasksCount}</Text>
-            <Text style={styles.statLabel}>Tasks done</Text>
+          <View style={styles.readoutRow}>
+             <Text style={styles.readoutLabel}>ACTIVE PROJECTS</Text>
+             <Text style={styles.readoutDots} numberOfLines={1}>........................................</Text>
+             <Text style={styles.readoutValue}>{projects.length}</Text>
+             <Text style={styles.readoutUnit}> total</Text>
+          </View>
+          <View style={styles.readoutRow}>
+             <Text style={styles.readoutLabel}>TASKS DONE</Text>
+             <Text style={styles.readoutDots} numberOfLines={1}>........................................</Text>
+             <Text style={styles.readoutValue}>{profile.completedTasksCount}</Text>
+             <Text style={styles.readoutUnit}> items</Text>
           </View>
         </View>
 
-        {/* Projects */}
-        <SectionHeader title="Projects" />
-        {projects.map((p) => (
+        <View style={{ height: 32 }} />
+
+        <SectionHeader title="ACTIVE.PROJECTS" />
+        {projects.length > 0 ? projects.map((p) => (
           <ProjectCard key={p.id} project={p} onPress={() => router.push(`/project/${p.id}`)} />
-        ))}
+        )) : <EmptyState title="No projects" />}
 
-        {/* Sign out */}
-        <Pressable onPress={handleSignOut} disabled={signingOut || deleting} style={[styles.signOutBtn, signingOut && styles.signOutBtnDisabled]}>
-          <Ionicons name="log-out-outline" size={18} color={TEXT.primary} />
-          <Text style={styles.signOutText}>{signingOut ? 'Signing out...' : 'Sign out'}</Text>
-        </Pressable>
+        <View style={{ height: 48 }} />
 
-        {/* Delete Account */}
-        <Pressable onPress={handleDeleteAccount} disabled={signingOut || deleting} style={[styles.deleteBtn, deleting && styles.signOutBtnDisabled]}>
-          <Ionicons name="trash-outline" size={18} color={SEMANTIC.red} />
-          <Text style={styles.deleteBtnText}>{deleting ? 'Deleting account...' : 'Delete account'}</Text>
-        </Pressable>
+        <SectionHeader title="SYSTEM.TERMINATION" />
+        <View style={styles.dangerZone}>
+          <Pressable onPress={handleSignOut} disabled={signingOut || deleting} style={styles.ghostBtn}>
+            <Text style={styles.ghostText}>{signingOut ? 'LOGGING OUT...' : 'LOGOUT.SESSION →'}</Text>
+          </Pressable>
+
+          <Pressable onPress={handleDeleteAccount} disabled={signingOut || deleting} style={styles.ghostBtn}>
+            <Text style={styles.dangerText}>{deleting ? 'DESTROYING...' : 'DESTROY.ACCOUNT →'}</Text>
+          </Pressable>
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: BG.bg0 },
-  container: { padding: 20, gap: 16 },
+  safe: { flex: 1, backgroundColor: BG.base },
+  container: { padding: 16, gap: 16 },
   profileSection: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 12,
+  },
+  avatarPlaceholder: {
+    width: 56,
+    height: 56,
+    backgroundColor: BG.bg1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: BORDER.mid,
+  },
+  avatarInitials: {
+    fontSize: FontSize.monoLg,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
   },
   profileInfo: { flex: 1, gap: 4 },
-  name: { fontSize: FontSize.xl, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
-  course: { fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.secondary },
+  name: { fontSize: FontSize.lg, fontFamily: FontFamily.interMedium, color: TEXT.t0 },
+  course: { fontSize: FontSize.monoSm, fontFamily: FontFamily.monoMedium, color: TEXT.t2 },
+  roleTag: { fontSize: FontSize.monoSm, fontFamily: FontFamily.monoMedium, color: ACCENT.primary },
   editBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: BG.bg2,
-    borderWidth: 0.5,
-    borderColor: BORDER.default,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 8,
   },
-  statsRow: {
-    flexDirection: 'row',
+  editBtnText: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
+  },
+  readoutPanel: {
     backgroundColor: BG.bg1,
-    borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: BORDER.default,
-    padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER.mid,
+    borderRadius: 0,
+    marginTop: 8,
   },
-  stat: { flex: 1, alignItems: 'center', gap: 2 },
-  statValue: { fontSize: FontSize['2xl'], fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
-  statLabel: { fontSize: FontSize.sm, fontFamily: FontFamily.interRegular, color: TEXT.secondary },
-  statDivider: { width: 0.5, backgroundColor: BORDER.default },
-  signOutBtn: {
+  readoutHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
+    padding: 10,
+  },
+  readoutHeaderText: {
+    fontFamily: FontFamily.monoMedium,
+    fontSize: FontSize.monoSm,
+    color: TEXT.t3,
+  },
+  readoutRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: BG.bg2,
-    borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: BORDER.default,
-    padding: 14,
-    marginTop: 8,
-    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  signOutBtnDisabled: { opacity: 0.6 },
-  signOutText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: TEXT.primary },
-  deleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: SEMANTIC.redDim,
-    borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: SEMANTIC.redBorder,
-    padding: 14,
-    marginTop: 8,
-    justifyContent: 'center',
+  readoutLabel: {
+    fontFamily: FontFamily.monoMedium,
+    fontSize: FontSize.caption,
+    color: TEXT.t3,
   },
-  deleteBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: SEMANTIC.red },
+  readoutDots: {
+    flex: 1,
+    fontFamily: FontFamily.monoMedium,
+    fontSize: FontSize.caption,
+    color: TEXT.t3,
+    letterSpacing: 2,
+    marginHorizontal: 8,
+    opacity: 0.5,
+    overflow: 'hidden',
+  },
+  readoutValue: {
+    fontFamily: FontFamily.monoMedium,
+    fontSize: FontSize.lg,
+    color: TEXT.t0,
+  },
+  readoutUnit: {
+    fontFamily: FontFamily.monoMedium,
+    fontSize: FontSize.label,
+    color: TEXT.t3,
+    width: 48,
+  },
+  dangerZone: {
+    gap: 16,
+    alignItems: 'flex-start',
+    paddingTop: 8,
+  },
+  ghostBtn: {
+    paddingVertical: 8,
+  },
+  ghostText: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t2,
+  },
+  dangerText: {
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: SEMANTIC.red,
+  },
 });

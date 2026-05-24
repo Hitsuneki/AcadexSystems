@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TEXT, SEMANTIC } from '@/constants/colors';
+import { ACCENT, TEXT, SEMANTIC } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { Avatar } from './Avatar';
 import { Badge } from './Badge';
@@ -14,10 +14,10 @@ interface MemberRowProps {
 }
 
 const ROLE_COLORS = {
-  Student: { color: '#38BDF8', bg: 'rgba(56,189,248,0.12)' },
-  Teacher: { color: '#A78BFA', bg: 'rgba(167,139,250,0.12)' },
-  Researcher: { color: '#34D399', bg: 'rgba(52,211,153,0.12)' },
-  Professional: { color: '#FB923C', bg: 'rgba(251,146,60,0.12)' },
+  Student: { color: ACCENT.signal, bg: ACCENT.signalDim },
+  Teacher: { color: TEXT.secondary, bg: 'transparent' },
+  Researcher: { color: SEMANTIC.green, bg: SEMANTIC.greenDim },
+  Professional: { color: TEXT.secondary, bg: 'transparent' },
 };
 
 export function MemberRow({ user, showRemove = false, onRemove }: MemberRowProps) {

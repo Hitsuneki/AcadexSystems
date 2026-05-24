@@ -21,7 +21,7 @@ interface FileTypeIconProps {
 export function FileTypeIcon({ fileType, size = 36 }: FileTypeIconProps) {
   const { text, bg } = FILE_TYPE_COLORS[fileType];
   return (
-    <View style={[styles.container, { width: size, height: size, backgroundColor: bg, borderRadius: 6 }]}>
+    <View style={[styles.container, { width: size, height: size, backgroundColor: bg, borderRadius: 0 }]}>
       <Text style={[styles.label, { color: text, fontSize: size < 30 ? FontSize.xs : FontSize.sm }]}>
         {FILE_LABELS[fileType]}
       </Text>

@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TEXT, SEMANTIC } from '@/constants/colors';
-import { CardDefaults } from '@/constants/theme';
+import { TEXT, SEMANTIC, BORDER, BG } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { formatDate } from '@/utils/date';
 import type { Note } from '@/types';
@@ -29,50 +28,55 @@ export function NoteCard({ note, onPress, onDelete }: NoteCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <View style={styles.info}>
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      
+      <View style={styles.left}>
         <Text style={styles.title} numberOfLines={1}>{note.title}</Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {formatDate(note.updatedAt)}
-        </Text>
       </View>
-      {onDelete ? (
-        <Pressable onPress={handleDelete} hitSlop={8} style={styles.deleteBtn}>
-          <Ionicons name="trash-outline" size={16} color={SEMANTIC.red} />
-        </Pressable>
-      ) : (
-        <Ionicons name="chevron-forward" size={16} color={TEXT.muted} />
-      )}
+
+      <View style={styles.right}>
+        <Text style={styles.meta} numberOfLines={1}>
+          EDITED · {formatDate(note.updatedAt)}
+        </Text>
+        {onDelete ? (
+          <Pressable onPress={handleDelete} hitSlop={8} style={styles.deleteBtn}>
+            <Ionicons name="trash-outline" size={16} color={SEMANTIC.red} />
+          </Pressable>
+        ) : (
+          <Ionicons name="arrow-forward" size={14} color={TEXT.t3} />
+        )}
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: CardDefaults.backgroundColor,
-    borderRadius: CardDefaults.borderRadius,
-    borderWidth: CardDefaults.borderWidth,
-    borderColor: CardDefaults.borderColor,
-    padding: CardDefaults.padding,
-    gap: 12,
-    marginBottom: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER.dim,
+    backgroundColor: BG.base,
   },
-  pressed: { opacity: 0.75 },
-  info: { flex: 1 },
+  pressed: { backgroundColor: BG.bg2 },
+  left: { flex: 1 },
   title: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.body,
     fontFamily: FontFamily.interMedium,
-    color: TEXT.primary,
-    marginBottom: 2,
+    color: TEXT.t1,
+  },
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   meta: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.interRegular,
-    color: TEXT.secondary,
+    fontSize: FontSize.monoSm,
+    fontFamily: FontFamily.monoMedium,
+    color: TEXT.t3,
+    textTransform: 'uppercase',
   },
-  deleteBtn: {
-    padding: 4,
-  },
+  deleteBtn: { padding: 4 },
 });

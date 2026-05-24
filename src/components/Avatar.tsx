@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { ACCENT, TEXT } from '@/constants/colors';
+import { BG, BORDER, TEXT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
 export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -11,17 +11,18 @@ interface AvatarProps {
   size?: AvatarSize;
 }
 
-const SIZE_MAP: Record<AvatarSize, number> = { sm: 24, md: 32, lg: 40, xl: 56 };
-const FONT_MAP: Record<AvatarSize, number> = { sm: 9, md: 11, lg: 14, xl: 18 };
+const SIZE_MAP: Record<AvatarSize, number> = { sm: 20, md: 28, lg: 36, xl: 44 };
+const FONT_MAP: Record<AvatarSize, number> = { sm: 10, md: 12, lg: 16, xl: 20 };
 
 export function Avatar({ uri, name, size = 'md' }: AvatarProps) {
   const dim = SIZE_MAP[size];
   const fs = FONT_MAP[size];
+  // 1 character mono initials
   const initials = name
-    ? name.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    ? name.trim()[0].toUpperCase()
     : '?';
 
-  const containerStyle = { width: dim, height: dim, borderRadius: dim / 2 };
+  const containerStyle = { width: dim, height: dim, borderRadius: 0 };
 
   if (uri) {
     return <Image source={{ uri }} style={[styles.image, containerStyle]} />;
@@ -35,15 +36,17 @@ export function Avatar({ uri, name, size = 'md' }: AvatarProps) {
 }
 
 const styles = StyleSheet.create({
-  image: { resizeMode: 'cover' },
+  image: { resizeMode: 'cover', borderWidth: 1, borderColor: BORDER.dim },
   fallback: {
-    backgroundColor: ACCENT.blueDim,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: BORDER.dim,
     alignItems: 'center',
     justifyContent: 'center',
   },
   initials: {
-    color: ACCENT.blue,
-    fontFamily: FontFamily.interSemiBold,
+    color: TEXT.t2,
+    fontFamily: FontFamily.monoMedium,
     lineHeight: undefined,
   },
 });

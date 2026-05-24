@@ -16,12 +16,8 @@ export default function SplashScreen() {
 
   useEffect(() => {
     if (loading) return;
-    if (user && isProfileComplete(profile)) {
-      router.replace("/(main)");
-    } else if (user) {
-      router.replace("/(auth)/complete-profile");
-    }
-    // else: stay here, user navigates to login
+    // Removed auto-redirects here so users always see the landing page first.
+    // The Enter Workspace button will handle navigation if they are logged in.
   }, [user, profile, loading]);
 
   if (loading) {
@@ -36,16 +32,23 @@ export default function SplashScreen() {
         <Text style={styles.tagline}>The student workspace.</Text>
       </View>
 
-      {!user && (
-        <View style={styles.actions}>
+      <View style={styles.actions}>
+        {user ? (
+          <Text
+            style={styles.signInLink}
+            onPress={() => isProfileComplete(profile) ? router.push("/(main)") : router.push("/(auth)/complete-profile")}
+          >
+            Enter Workspace →
+          </Text>
+        ) : (
           <Text
             style={styles.signInLink}
             onPress={() => router.push("/(auth)/login")}
           >
             Sign in →
           </Text>
-        </View>
-      )}
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -66,7 +69,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize["3xl"],
     fontFamily: FontFamily.soraBold,
     color: TEXT.primary,
-    letterSpacing: 2,
+    letterSpacing: 0,
   },
   tagline: {
     fontSize: FontSize.md,
@@ -81,6 +84,6 @@ const styles = StyleSheet.create({
   signInLink: {
     fontSize: FontSize.lg,
     fontFamily: FontFamily.interMedium,
-    color: "#2563EB",
+    color: TEXT.primary,
   },
 });
