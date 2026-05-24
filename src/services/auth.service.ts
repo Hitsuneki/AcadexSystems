@@ -1,12 +1,13 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
   type User,
   type UserCredential,
 } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
 import { auth, db } from '@/config/firebase';
 import type { RoleLabel, UserProfile } from '@/types';
@@ -171,4 +172,18 @@ export async function uploadAvatar(
 
 export async function signOutUser(): Promise<void> {
   await logoutUser();
+}
+
+export async function deleteUserAccount(userId: string): Promise<void> {
+  try {
+    // Delete Firestore profile first
+    await deleteDoc(doc(db, 'users', userId));
+    // Delete Firebase Auth account
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      await deleteUser(currentUser);
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to delete account: ${error.message}`);
+  }
 }

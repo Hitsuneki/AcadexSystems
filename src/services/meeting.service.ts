@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   onSnapshot,
@@ -62,6 +63,7 @@ export async function createMeeting(
       agendaItems: data.agendaItems ?? [],
       decisions: data.decisions ?? data.notes ?? '',
       actionItems,
+      status: 'active',
       createdBy: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -153,10 +155,23 @@ export async function pushActionItemToBoard(
   }
 }
 
+export async function deleteMeeting(meetingId: string): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'meetings', meetingId), {
+      status: 'deleted',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to delete meeting: ${error.message}`);
+  }
+}
+
 export function listenToProjectMeetings(
   projectId: string,
   callback: (meetings: Meeting[]) => void,
 ): () => void {
+  // Simple single-field query to avoid composite index requirements.
+  // Deleted meetings and sort order are handled on the client.
   const q = query(
     collection(db, 'meetings'),
     where('projectId', '==', projectId),
@@ -164,7 +179,12 @@ export function listenToProjectMeetings(
   );
   return onSnapshot(
     q,
-    (snapshot) => callback(snapshot.docs.map((item) => mapMeeting(item.id, item.data()))),
+    (snapshot) => {
+      const meetings = snapshot.docs
+        .map((item) => mapMeeting(item.id, item.data()))
+        .filter((m) => m.status !== 'deleted');
+      callback(meetings);
+    },
     (error) => {
       throw new Error(`Failed to listen to meetings: ${error.message}`);
     },

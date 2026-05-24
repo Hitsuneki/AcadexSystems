@@ -7,7 +7,7 @@ import { AcadexBottomSheet } from '../AcadexBottomSheet';
 import { FormInput } from '../FormInput';
 import { Avatar } from '../Avatar';
 import { PriorityBadge } from '../PriorityBadge';
-import { BG, TEXT, ACCENT, BORDER, PRIORITY_COLORS } from '@/constants/colors';
+import { BG, TEXT, ACCENT, BORDER, PRIORITY_COLORS, SEMANTIC } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { validateRequired } from '@/utils/validation';
 import { createTask } from '@/services/task.service';
@@ -81,7 +81,14 @@ export function CreateTaskSheet({ visible, onClose, projectId, userId, initialCo
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>Due date (optional)</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.label}>Due date (optional)</Text>
+            {dueDate && (
+              <Pressable onPress={() => setDueDate(null)}>
+                <Text style={{ fontSize: FontSize.xs, color: SEMANTIC.red, fontFamily: FontFamily.interMedium }}>Clear</Text>
+              </Pressable>
+            )}
+          </View>
           <Pressable onPress={() => setShowDatePicker(true)} style={styles.dateBtn}>
             <Text style={styles.dateBtnText}>{dueDate ? format(dueDate, 'MMM d, yyyy') : 'Select date'}</Text>
           </Pressable>
@@ -89,7 +96,10 @@ export function CreateTaskSheet({ visible, onClose, projectId, userId, initialCo
             <DateTimePicker
               value={dueDate ?? new Date()}
               mode="date"
-              onChange={(_, date) => { setShowDatePicker(false); if (date) setDueDate(date); }}
+              onChange={(event, date) => {
+                setShowDatePicker(false);
+                if (event.type === 'set' && date) setDueDate(date);
+              }}
             />
           )}
         </View>

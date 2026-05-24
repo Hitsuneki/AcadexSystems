@@ -9,21 +9,36 @@ import { Ionicons } from '@expo/vector-icons';
 import { MemberRow } from '@/components/MemberRow';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EmptyState } from '@/components/EmptyState';
+import { useAuthStore } from '@/stores/auth.store';
 import { useProjectStore } from '@/stores/project.store';
 import { useProjectMembers } from '@/hooks/use-project-members';
+import { leaveProject } from '@/services/project.service';
 import { BG, BORDER, TEXT, ACCENT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
 export default function MembersScreen() {
   const { id: projectId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuthStore();
   const { currentProject } = useProjectStore();
   const { members, loading } = useProjectMembers(currentProject?.memberIds);
+
+  const isOwner = currentProject?.createdBy === user?.uid || currentProject?.ownerId === user?.uid;
 
   const copyInviteCode = async () => {
     if (!currentProject?.inviteCode) return;
     await Clipboard.setStringAsync(currentProject.inviteCode);
     Toast.show({ type: 'success', text1: 'Invite code copied' });
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!currentProject) return;
+    try {
+      await leaveProject(currentProject.id, memberId);
+      Toast.show({ type: 'success', text1: 'Member removed' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to remove member' });
+    }
   };
 
   if (loading) return <LoadingSpinner fullscreen />;
@@ -55,7 +70,11 @@ export default function MembersScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.memberWrap}>
-            <MemberRow user={item} />
+            <MemberRow 
+              user={item} 
+              showRemove={isOwner && item.id !== user?.uid}
+              onRemove={handleRemoveMember}
+            />
           </View>
         )}
         contentContainerStyle={styles.listContent}

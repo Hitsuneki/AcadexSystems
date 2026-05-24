@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Image, Linking, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BG, BORDER, TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
 import { CardDefaults } from '@/constants/theme';
@@ -14,6 +14,10 @@ interface AnnouncementCardProps {
   currentUserId?: string;
   onReact: (id: string) => void;
   onDelete: (id: string) => void;
+}
+
+function isImageUrl(url: string): boolean {
+  return /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url);
 }
 
 export function AnnouncementCard({ announcement, author, currentUserId, onReact, onDelete }: AnnouncementCardProps) {
@@ -39,6 +43,23 @@ export function AnnouncementCard({ announcement, author, currentUserId, onReact,
 
       {/* Body */}
       <Text style={styles.body}>{announcement.body}</Text>
+
+      {/* Attachment */}
+      {announcement.attachmentUrl && (
+        <View style={styles.attachmentWrapper}>
+          {isImageUrl(announcement.attachmentUrl) ? (
+            <Pressable onPress={() => Linking.openURL(announcement.attachmentUrl!)}>
+              <Image source={{ uri: announcement.attachmentUrl }} style={styles.attachmentImage} resizeMode="cover" />
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => Linking.openURL(announcement.attachmentUrl!)} style={styles.fileRow}>
+              <Ionicons name="document-outline" size={20} color={ACCENT.blue} />
+              <Text style={styles.fileName} numberOfLines={1}>Attached File</Text>
+              <Ionicons name="open-outline" size={16} color={TEXT.muted} />
+            </Pressable>
+          )}
+        </View>
+      )}
 
       {/* Reactions */}
       <Pressable
@@ -89,6 +110,27 @@ const styles = StyleSheet.create({
     color: TEXT.secondary,
     lineHeight: 20,
   },
+  attachmentWrapper: { marginTop: 4 },
+  attachmentImage: {
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 480 : undefined,
+    aspectRatio: 16 / 9,
+    borderRadius: 8,
+    backgroundColor: BG.bg2,
+    borderWidth: 0.5,
+    borderColor: BORDER.default,
+  },
+  fileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    backgroundColor: BG.bg2,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: BORDER.default,
+  },
+  fileName: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
   reactionBtn: {
     flexDirection: 'row',
     alignItems: 'center',

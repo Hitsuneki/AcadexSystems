@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { BG, TEXT, BORDER } from '@/constants/colors';
 import { COLUMN_COLORS } from '@/constants/colors';
@@ -31,9 +31,13 @@ export function KanbanColumn({ columnKey, title, tasks, members = [], width, onT
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Task>) => (
     <ScaleDecorator>
-      <Pressable onLongPress={drag} disabled={isActive} onPress={() => onTaskPress(item)}>
-        <TaskCard task={item} members={members} onPress={() => onTaskPress(item)} />
-      </Pressable>
+      <TaskCard
+        task={item}
+        members={members}
+        onPress={() => onTaskPress(item)}
+        onLongPress={drag}
+        disabled={isActive}
+      />
     </ScaleDecorator>
   );
 

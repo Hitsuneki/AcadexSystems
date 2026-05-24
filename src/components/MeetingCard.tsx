@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
 import { CardDefaults } from '@/constants/theme';
@@ -12,19 +12,39 @@ interface MeetingCardProps {
   meeting: Meeting;
   members?: UserProfile[];
   onPress: () => void;
+  onDelete?: () => void;
 }
 
-export function MeetingCard({ meeting, members = [], onPress }: MeetingCardProps) {
+export function MeetingCard({ meeting, members = [], onPress, onDelete }: MeetingCardProps) {
   const attendees = members.filter((m) => meeting.attendeeIds.includes(m.id));
   const visible = attendees.slice(0, 4);
   const extra = attendees.length - visible.length;
   const actionCount = meeting.actionItems.length;
 
+  const handleDelete = () => {
+    if (!onDelete) return;
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm('Delete this meeting? This cannot be undone.')) onDelete();
+      return;
+    }
+    Alert.alert('Delete meeting', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: onDelete },
+    ]);
+  };
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <Text style={styles.date}>{formatMeetingDate(meeting.date)}</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.date}>{formatMeetingDate(meeting.date)}</Text>
+        {onDelete && (
+          <Pressable onPress={handleDelete} hitSlop={8} style={styles.deleteBtn}>
+            <Ionicons name="trash-outline" size={16} color={SEMANTIC.red} />
+          </Pressable>
+        )}
+      </View>
       <Text style={styles.title} numberOfLines={2}>{meeting.title}</Text>
 
       <View style={styles.footer}>
@@ -62,11 +82,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   pressed: { opacity: 0.75 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   date: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.interMedium,
     color: ACCENT.blue,
   },
+  deleteBtn: { padding: 4 },
   title: {
     fontSize: FontSize.lg,
     fontFamily: FontFamily.interSemiBold,

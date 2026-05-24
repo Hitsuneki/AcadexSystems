@@ -12,9 +12,13 @@ interface TaskCardProps {
   task: Task;
   members?: UserProfile[];
   onPress: () => void;
+  onLongPress?: () => void;
+  disabled?: boolean;
+  /** When true, shows a small 44×44 thumbnail instead of full 16:9 preview */
+  compact?: boolean;
 }
 
-export function TaskCard({ task, members = [], onPress }: TaskCardProps) {
+export function TaskCard({ task, members = [], onPress, onLongPress, disabled = false, compact = false }: TaskCardProps) {
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
   const assignees = members.filter((m) => task.assigneeIds.includes(m.id));
   const visibleAssignees = assignees.slice(0, 3);
@@ -26,13 +30,22 @@ export function TaskCard({ task, members = [], onPress }: TaskCardProps) {
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      disabled={disabled}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={2}>{task.title}</Text>
-        <PriorityBadge priority={task.priority} />
+        {compact && imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.compactImage} resizeMode="cover" />
+        ) : (
+          <PriorityBadge priority={task.priority} />
+        )}
       </View>
 
-      {imageUrl && <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />}
+      {/* Full-width preview only in non-compact (board) mode */}
+      {!compact && imageUrl && (
+        <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />
+      )}
 
       {task.dueDate && (
         <Text style={[styles.dueDate, overdue && styles.overdue]}>
@@ -81,6 +94,13 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.interMedium,
     color: TEXT.primary,
     lineHeight: 19,
+  },
+  compactImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 6,
+    backgroundColor: BG.bg2,
+    flexShrink: 0,
   },
   previewImage: {
     width: '100%',

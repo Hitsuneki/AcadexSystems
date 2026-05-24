@@ -37,6 +37,7 @@ import {
   toggleChecklistItem,
   addChecklistItem,
   attachFileToTask,
+  removeFileFromTask,
   assignMembers,
   moveTask,
 } from '@/services/task.service';
@@ -90,6 +91,7 @@ export default function TaskDetailScreen() {
   const [movingColumn, setMovingColumn] = useState(false);
   const [savingAssignees, setSavingAssignees] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [savingTask, setSavingTask] = useState(false);
   const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>(task?.assigneeIds ?? []);
 
   useEffect(() => {
@@ -159,16 +161,19 @@ export default function TaskDetailScreen() {
     }
   };
 
-  const handleBlurTitle = async () => {
-    if (title.trim() && title !== task?.title) {
-      await updateTask(taskId, { title: title.trim() });
-    }
-  };
-
-  const handleBlurDesc = async () => {
-    setEditingDesc(false);
-    if (description !== task?.description) {
-      await updateTask(taskId, { description: description.trim() });
+  const handleSaveTask = async () => {
+    if (!title.trim()) return;
+    setSavingTask(true);
+    try {
+      await updateTask(taskId, {
+        title: title.trim(),
+        description: description.trim(),
+      });
+      Toast.show({ type: 'success', text1: 'Changes saved' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to save changes' });
+    } finally {
+      setSavingTask(false);
     }
   };
 
@@ -258,6 +263,14 @@ export default function TaskDetailScreen() {
     }
   };
 
+  const handleRemoveAttachment = async (url: string) => {
+    try {
+      await removeFileFromTask(taskId, url);
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to remove attachment' });
+    }
+  };
+
   if (!task) return <LoadingSpinner fullscreen />;
 
   const assignees = members.filter((m) => selectedAssigneeIds.includes(m.id));
@@ -274,9 +287,11 @@ export default function TaskDetailScreen() {
             style={styles.titleInput}
             value={title}
             onChangeText={setTitle}
-            onBlur={handleBlurTitle}
             multiline
           />
+          <Pressable onPress={handleSaveTask} disabled={savingTask} style={styles.saveBtn}>
+            {savingTask ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Text style={styles.saveBtnText}>Save</Text>}
+          </Pressable>
         </View>
 
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -320,16 +335,15 @@ export default function TaskDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
             {editingDesc ? (
-              <TextInput
-                style={styles.descInput}
-                value={description}
-                onChangeText={setDescription}
-                onBlur={handleBlurDesc}
-                multiline
-                autoFocus
-                placeholderTextColor={InputDefaults.placeholderTextColor}
-                placeholder="Add a description..."
-              />
+                <TextInput
+                  style={styles.descInput}
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline
+                  autoFocus
+                  placeholderTextColor={InputDefaults.placeholderTextColor}
+                  placeholder="Add a description..."
+                />
             ) : (
               <Pressable onPress={() => setEditingDesc(true)} style={styles.descDisplay}>
                 <Text style={[styles.descText, !description && styles.descPlaceholder]}>
@@ -393,18 +407,28 @@ export default function TaskDetailScreen() {
                 {imageFiles.length > 0 && (
                   <View style={styles.imageGrid}>
                     {imageFiles.map((file) => (
-                      <Pressable key={file.url} onPress={() => Linking.openURL(file.url)} style={styles.imageTile}>
-                        <Image source={{ uri: file.url }} style={styles.imagePreview} resizeMode="cover" />
-                      </Pressable>
+                      <View key={file.url} style={styles.imageTile}>
+                        <Pressable onPress={() => Linking.openURL(file.url)} style={{ flex: 1 }}>
+                          <Image source={{ uri: file.url }} style={styles.imagePreview} resizeMode="cover" />
+                        </Pressable>
+                        <Pressable onPress={() => handleRemoveAttachment(file.url)} style={styles.removeImageBtn} hitSlop={8}>
+                          <Ionicons name="close-circle" size={22} color={SEMANTIC.red} />
+                        </Pressable>
+                      </View>
                     ))}
                   </View>
                 )}
-                {taskFiles.map((file) => (
-                  <Pressable key={file.url} onPress={() => Linking.openURL(file.url)} style={styles.fileRow}>
-                    <Ionicons name={isImageUrl(file.url) ? 'image-outline' : 'document-outline'} size={20} color={ACCENT.blue} />
-                    <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                    <Ionicons name="open-outline" size={16} color={TEXT.muted} />
-                  </Pressable>
+                {taskFiles.filter(f => !isImageUrl(f.url)).map((file) => (
+                  <View key={file.url} style={styles.fileRow}>
+                    <Pressable onPress={() => Linking.openURL(file.url)} style={styles.fileLink}>
+                      <Ionicons name="document-outline" size={20} color={ACCENT.blue} />
+                      <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
+                      <Ionicons name="open-outline" size={16} color={TEXT.muted} />
+                    </Pressable>
+                    <Pressable onPress={() => handleRemoveAttachment(file.url)} hitSlop={8} style={{ padding: 4 }}>
+                      <Ionicons name="trash-outline" size={18} color={SEMANTIC.red} />
+                    </Pressable>
+                  </View>
                 ))}
               </>
             )}
@@ -460,6 +484,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'flex-start', padding: 16, gap: 12, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
   titleInput: { flex: 1, fontSize: FontSize.xl, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary, lineHeight: 26 },
+  saveBtn: { paddingHorizontal: 10, paddingVertical: 4 },
+  saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
   container: { padding: 16, gap: 20, paddingBottom: 40 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   dueDate: { fontSize: FontSize.sm, fontFamily: FontFamily.interMedium, color: TEXT.secondary },
@@ -529,6 +555,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER.default,
   },
   imagePreview: { width: '100%', height: '100%' },
+  removeImageBtn: { position: 'absolute', top: -6, right: -6, backgroundColor: BG.bg0, borderRadius: 12 },
   fileRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -539,6 +566,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: BORDER.default,
   },
+  fileLink: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   fileName: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interMedium, color: TEXT.primary },
   checkItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   checkItemText: { flex: 1, fontSize: FontSize.md, fontFamily: FontFamily.interRegular, color: TEXT.primary },

@@ -1,5 +1,6 @@
 import {
   addDoc,
+  arrayRemove,
   arrayUnion,
   collection,
   getDoc,
@@ -198,6 +199,17 @@ export async function attachFileToTask(taskId: string, fileUrl: string): Promise
   }
 }
 
+export async function removeFileFromTask(taskId: string, fileUrl: string): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'tasks', taskId), {
+      attachmentUrls: arrayRemove(fileUrl),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to remove file from task: ${error.message}`);
+  }
+}
+
 export async function toggleChecklistItem(taskId: string, itemId: string): Promise<void> {
   try {
     const snapshot = await getDoc(doc(db, 'tasks', taskId));
@@ -249,15 +261,30 @@ function groupTasksByProject(docs: { id: string; data: () => Record<string, unkn
   }, {});
 }
 
-export async function getTasksByAssignee(userId: string): Promise<Record<string, Task[]>> {
+export async function getTasksByAssignee(userId: string, projectIds: string[]): Promise<Record<string, Task[]>> {
+  if (!projectIds.length) return {};
   try {
-    const q = query(
-      collection(db, 'tasks'),
-      where('assigneeIds', 'array-contains', userId),
-      where('status', '==', 'active'),
-    );
-    const snapshot = await getDocs(q);
-    return groupTasksByProject(snapshot.docs);
+    const tasks: Task[] = [];
+    // Chunk projectIds to respect Firestore's 30-item limit for 'in' queries
+    for (let i = 0; i < projectIds.length; i += 30) {
+      const chunk = projectIds.slice(i, i + 30);
+      const q = query(
+        collection(db, 'tasks'),
+        where('projectId', 'in', chunk),
+        where('assigneeIds', 'array-contains', userId)
+      );
+      const snapshot = await getDocs(q);
+      snapshot.docs.forEach(doc => {
+        const s = doc.data().status;
+        if (s !== 'completed' && s !== 'cancelled') {
+          tasks.push(mapTask(doc.id, doc.data()));
+        }
+      });
+    }
+    return tasks.reduce<Record<string, Task[]>>((groups, task) => {
+      groups[task.projectId] = [...(groups[task.projectId] ?? []), task];
+      return groups;
+    }, {});
   } catch (error: any) {
     throw new Error(`Failed to load assigned tasks: ${error.message}`);
   }
@@ -265,18 +292,41 @@ export async function getTasksByAssignee(userId: string): Promise<Record<string,
 
 export function listenToAssigneeTasks(
   userId: string,
+  projectIds: string[],
   callback: (tasks: Record<string, Task[]>) => void,
   onError?: (error: Error) => void,
 ): () => void {
+  if (!projectIds.length) {
+    callback({});
+    return () => {};
+  }
+  
+  // To avoid complex multi-listener management for >30 projects, 
+  // we'll slice to 30. If a user has >30 active projects, they need a backend function.
+  const activeIds = projectIds.slice(0, 30);
   const q = query(
     collection(db, 'tasks'),
-    where('assigneeIds', 'array-contains', userId),
-    where('status', '==', 'active'),
+    where('projectId', 'in', activeIds),
+    where('assigneeIds', 'array-contains', userId)
   );
+  
   return onSnapshot(
     q,
-    (snapshot) => callback(groupTasksByProject(snapshot.docs)),
-    (error) => onError?.(new Error(`Failed to listen to assigned tasks: ${error.message}`)),
+    (snapshot) => {
+      const tasks = snapshot.docs
+        .filter((doc) => {
+          const s = doc.data().status;
+          return s !== 'completed' && s !== 'cancelled';
+        })
+        .map((doc) => mapTask(doc.id, doc.data()));
+        
+      const grouped = tasks.reduce<Record<string, Task[]>>((groups, task) => {
+        groups[task.projectId] = [...(groups[task.projectId] ?? []), task];
+        return groups;
+      }, {});
+      callback(grouped);
+    },
+    (error) => onError?.(new Error(`Failed to listen to assigned tasks: ${error.message}`))
   );
 }
 

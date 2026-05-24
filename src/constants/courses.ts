@@ -173,7 +173,7 @@ export const COURSE_GROUPS: readonly CourseGroup[] = [
 ] as const;
 
 /** Flat list of every selectable program (deduplicated). */
-export const COURSE_PROGRAMS: readonly string[] = COURSE_GROUPS.flatMap((g) => g.programs);
+export const COURSE_PROGRAMS: readonly string[] = (COURSE_GROUPS as readonly CourseGroup[]).reduce<string[]>((acc, g) => acc.concat(g.programs as readonly string[]), []);
 
 export function isKnownCourse(value: string): boolean {
   return COURSE_PROGRAMS.includes(value);

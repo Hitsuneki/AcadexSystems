@@ -33,14 +33,10 @@ function generateInviteCode(): string {
 }
 
 async function generateUniqueInviteCode(): Promise<string> {
-  for (let attempt = 0; attempt < 12; attempt++) {
-    const code = generateInviteCode();
-    const existing = await getDocs(
-      query(collection(db, 'projects'), where('inviteCode', '==', code)),
-    );
-    if (existing.empty) return code;
-  }
-  throw new Error('Could not generate a unique project code');
+  // A 6-character alphanumeric code has 2.1+ billion possibilities.
+  // Skipping the uniqueness check avoids a global read query that 
+  // violates Firestore security rules for private projects.
+  return generateInviteCode();
 }
 
 export async function createProject(userId: string, data: CreateProjectPayload): Promise<Project> {
