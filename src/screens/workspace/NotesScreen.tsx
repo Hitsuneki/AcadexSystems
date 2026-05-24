@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotes } from '@/hooks/use-notes';
-import { createNote } from '@/services/note.service';
+import { createNote, deleteNote } from '@/services/note.service';
 import { ACCENT, BG, BG as bg, BORDER, TEXT } from '@/constants/colors';
 import { InputDefaults } from '@/constants/theme';
 import { FontFamily, FontSize } from '@/constants/typography';
@@ -42,6 +42,15 @@ export default function NotesScreen({ projectId }: NotesScreenProps) {
     }
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      await deleteNote(noteId);
+      Toast.show({ type: 'success', text1: 'Note deleted' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to delete note' });
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -50,7 +59,7 @@ export default function NotesScreen({ projectId }: NotesScreenProps) {
         data={notes}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <NoteCard note={item} onPress={() => router.push(`/project/${projectId}/note/${item.id}`)} />
+          <NoteCard note={item} onPress={() => router.push(`/project/${projectId}/note/${item.id}`)} onDelete={() => handleDeleteNote(item.id)} />
         )}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<EmptyState icon="document-text-outline" title="No notes yet" subtitle="Create your first note to capture ideas" action="New note" onAction={() => setShowPrompt(true)} />}

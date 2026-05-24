@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getProject } from '@/services/project.service';
 import { getTasksByAssignee, listenToAssigneeTasks } from '@/services/task.service';
@@ -42,34 +42,10 @@ export function useMyTasks(userId: string | undefined) {
   const [loading, setLoading] = useState(Boolean(userId));
   const [error, setError] = useState<Error | null>(null);
 
-  const applyGrouped = useCallback(
-    async (grouped: Record<string, Task[]>) => {
-      setTasks(grouped);
-      const resolved = await resolveProjectNames(grouped, storeProjects);
-      setGroups(resolved);
-      setLoading(false);
-    },
-    [storeProjects],
-  );
-
-  const refetch = useCallback(async () => {
-    if (!userId) {
-      setGroups([]);
-      setTasks({});
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const grouped = await getTasksByAssignee(userId);
-      await applyGrouped(grouped);
-    } catch (err: any) {
-      setError(err);
-      setLoading(false);
-    }
-  }, [userId, applyGrouped]);
+  // Stable ref so the Firestore listener closure always sees the latest projects
+  // without re-subscribing every time the project store changes.
+  const storeProjectsRef = useRef(storeProjects);
+  useEffect(() => { storeProjectsRef.current = storeProjects; }, [storeProjects]);
 
   useEffect(() => {
     if (!userId) {
@@ -81,10 +57,19 @@ export function useMyTasks(userId: string | undefined) {
 
     setLoading(true);
     setError(null);
+
+    const projectIds = storeProjectsRef.current.map(p => p.id);
     const unsubscribe = listenToAssigneeTasks(
       userId,
+      projectIds,
       (grouped) => {
-        applyGrouped(grouped).catch((err) => setError(err));
+        setTasks(grouped);
+        resolveProjectNames(grouped, storeProjectsRef.current)
+          .then((resolved) => {
+            setGroups(resolved);
+            setLoading(false);
+          })
+          .catch((err) => setError(err));
       },
       (err) => {
         setError(err);
@@ -93,7 +78,26 @@ export function useMyTasks(userId: string | undefined) {
     );
 
     return unsubscribe;
-  }, [userId, applyGrouped]);
+  // Re-subscribe when userId changes, or when the number of loaded projects changes
+  // so we don't miss tasks if projects load asynchronously.
+  }, [userId, storeProjects.length]);
+
+  const refetch = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const projectIds = storeProjectsRef.current.map(p => p.id);
+      const grouped = await getTasksByAssignee(userId, projectIds);
+      setTasks(grouped);
+      const resolved = await resolveProjectNames(grouped, storeProjectsRef.current);
+      setGroups(resolved);
+    } catch (err: any) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
   return { groups, tasks, loading, error, refetch };
 }

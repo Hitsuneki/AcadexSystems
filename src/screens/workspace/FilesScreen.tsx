@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuthStore } from '@/stores/auth.store';
 import { useFiles } from '@/hooks/use-files';
 import { uploadFile } from '@/services/storage.service';
+import { deleteFile } from '@/services/file.service';
 import { ACCENT, BG } from '@/constants/colors';
 import type { ProjectFile } from '@/types';
 
@@ -57,6 +58,16 @@ export default function FilesScreen({ projectId }: FilesScreenProps) {
     router.push(`/project/${projectId}/file/${file.id}` as never);
   };
 
+  const handleDelete = async (file: ProjectFile) => {
+    if (!user || !file.storagePath) return;
+    try {
+      await deleteFile(file.id, file.storagePath, user.uid, projectId);
+      Toast.show({ type: 'success', text1: 'File deleted' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to delete file' });
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -64,7 +75,7 @@ export default function FilesScreen({ projectId }: FilesScreenProps) {
       <FlatList
         data={files}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <FileCard file={item} onPress={() => handleFilePress(item)} />}
+        renderItem={({ item }) => <FileCard file={item} onPress={() => handleFilePress(item)} onDelete={() => handleDelete(item)} />}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<EmptyState icon="document-outline" title="No files uploaded" subtitle="Upload your first file using the button below" />}
         showsVerticalScrollIndicator={false}

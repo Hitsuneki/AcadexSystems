@@ -33,14 +33,10 @@ function generateInviteCode(): string {
 }
 
 async function generateUniqueInviteCode(): Promise<string> {
-  for (let attempt = 0; attempt < 12; attempt++) {
-    const code = generateInviteCode();
-    const existing = await getDocs(
-      query(collection(db, 'projects'), where('inviteCode', '==', code)),
-    );
-    if (existing.empty) return code;
-  }
-  throw new Error('Could not generate a unique project code');
+  // A 6-character alphanumeric code has 2.1+ billion possibilities.
+  // Skipping the uniqueness check avoids a global read query that 
+  // violates Firestore security rules for private projects.
+  return generateInviteCode();
 }
 
 export async function createProject(userId: string, data: CreateProjectPayload): Promise<Project> {
@@ -212,6 +208,11 @@ export async function leaveProject(
     const project = mapProject(projectSnapshot.id, projectSnapshot.data());
     const remainingMemberIds = project.memberIds.filter((memberId) => memberId !== userId);
 
+    // Log activity FIRST while the user is still technically a member.
+    // If we remove them first, Firestore security rules will block logActivity
+    // because they are no longer in memberIds.
+    await logActivity(projectId, userId, 'member_left', 'project', projectId);
+
     await updateDoc(projectRef, {
       memberIds: arrayRemove(userId),
       status: remainingMemberIds.length === 0 ? 'archived' : project.status ?? 'active',
@@ -221,7 +222,6 @@ export async function leaveProject(
       projectIds: arrayRemove(projectId),
       updatedAt: serverTimestamp(),
     });
-    await logActivity(projectId, userId, 'member_left', 'project', projectId);
   } catch (error: any) {
     throw new Error(`Failed to leave project: ${error.message}`);
   }

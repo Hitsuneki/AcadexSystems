@@ -13,7 +13,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useAuthStore } from '@/stores/auth.store';
 import { useProjectStore } from '@/stores/project.store';
 import { useUserProjects } from '@/hooks/use-user-projects';
-import { signOutUser } from '@/services/auth.service';
+import { signOutUser, deleteUserAccount } from '@/services/auth.service';
 import { BG, TEXT, ACCENT, BORDER, SEMANTIC } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 
@@ -30,6 +30,7 @@ export default function ProfileScreen() {
   const clearActiveProject = useProjectStore((state) => state.clearActiveProject);
   const { projects } = useUserProjects(user?.uid);
   const [signingOut, setSigningOut] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!profile) return <LoadingSpinner fullscreen />;
 
@@ -63,6 +64,42 @@ export default function ProfileScreen() {
         text: 'Sign out',
         style: 'destructive',
         onPress: () => void performSignOut(),
+      },
+    ]);
+  };
+
+  const performDeleteAccount = async () => {
+    if (!user?.uid) return;
+    setDeleting(true);
+    try {
+      await deleteUserAccount(user.uid);
+      clearActiveProject();
+      signOut();
+      router.replace('/(auth)/login');
+    } catch (error: any) {
+      const msg = error.message.includes('requires-recent-login') 
+        ? 'Please sign out and sign back in to delete your account.' 
+        : error.message;
+      Toast.show({ type: 'error', text1: msg });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm('Are you sure you want to completely delete your account? This cannot be undone.')) {
+        void performDeleteAccount();
+      }
+      return;
+    }
+
+    Alert.alert('Delete Account', 'Are you sure you want to completely delete your account? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => void performDeleteAccount(),
       },
     ]);
   };
@@ -103,9 +140,15 @@ export default function ProfileScreen() {
         ))}
 
         {/* Sign out */}
-        <Pressable onPress={handleSignOut} disabled={signingOut} style={[styles.signOutBtn, signingOut && styles.signOutBtnDisabled]}>
-          <Ionicons name="log-out-outline" size={18} color={SEMANTIC.red} />
+        <Pressable onPress={handleSignOut} disabled={signingOut || deleting} style={[styles.signOutBtn, signingOut && styles.signOutBtnDisabled]}>
+          <Ionicons name="log-out-outline" size={18} color={TEXT.primary} />
           <Text style={styles.signOutText}>{signingOut ? 'Signing out...' : 'Sign out'}</Text>
+        </Pressable>
+
+        {/* Delete Account */}
+        <Pressable onPress={handleDeleteAccount} disabled={signingOut || deleting} style={[styles.deleteBtn, deleting && styles.signOutBtnDisabled]}>
+          <Ionicons name="trash-outline" size={18} color={SEMANTIC.red} />
+          <Text style={styles.deleteBtnText}>{deleting ? 'Deleting account...' : 'Delete account'}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -150,6 +193,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    backgroundColor: BG.bg2,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: BORDER.default,
+    padding: 14,
+    marginTop: 8,
+    justifyContent: 'center',
+  },
+  signOutBtnDisabled: { opacity: 0.6 },
+  signOutText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: TEXT.primary },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: SEMANTIC.redDim,
     borderRadius: 8,
     borderWidth: 0.5,
@@ -158,6 +215,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
     justifyContent: 'center',
   },
-  signOutBtnDisabled: { opacity: 0.6 },
-  signOutText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: SEMANTIC.red },
+  deleteBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: SEMANTIC.red },
 });

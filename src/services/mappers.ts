@@ -196,7 +196,7 @@ export function mapAnnouncement(id: string, data: any): Announcement {
   } as Announcement;
 }
 
-export function mapMeeting(id: string, data: any): Meeting {
+export function mapMeeting(id: string, data: any): Meeting & { status?: string } {
   return {
     id,
     projectId: data.projectId,
@@ -212,7 +212,8 @@ export function mapMeeting(id: string, data: any): Meeting {
     createdBy: data.createdBy ?? '',
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt),
-  } as Meeting;
+    status: data.status,
+  } as Meeting & { status?: string };
 }
 
 export function mapActivity(id: string, data: any): Activity {

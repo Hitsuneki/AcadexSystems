@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useProjectMembers } from '@/hooks/use-project-members';
 import { useProjectStore } from '@/stores/project.store';
 import { useMeetings } from '@/hooks/use-meetings';
-import { createMeeting, updateMeeting } from '@/services/meeting.service';
+import { createMeeting, updateMeeting, deleteMeeting } from '@/services/meeting.service';
 import { pushActionItemToBoard } from '@/services/task.service';
 import { BG, BORDER, TEXT, ACCENT, SEMANTIC } from '@/constants/colors';
 import { CardDefaults, InputDefaults } from '@/constants/theme';
@@ -95,6 +95,10 @@ export default function MeetingDetailScreen() {
   };
 
   const handlePushToBoard = async (actionId: string) => {
+    if (isCreate) {
+      Toast.show({ type: 'error', text1: 'Save the meeting first' });
+      return;
+    }
     try {
       await pushActionItemToBoard(meetingId, actionId, projectId, user?.uid);
       setActionItems((prev) => prev.map((ai) => ai.id === actionId ? { ...ai, status: 'pushed' as ActionItemStatus } : ai));
@@ -104,18 +108,38 @@ export default function MeetingDetailScreen() {
     }
   };
 
+  const handleDeleteMeeting = async () => {
+    if (!meeting) return;
+    try {
+      await deleteMeeting(meeting.id);
+      Toast.show({ type: 'success', text1: 'Meeting deleted' });
+      router.back();
+    } catch {
+      Toast.show({ type: 'error', text1: 'Failed to delete meeting' });
+    }
+  };
+
   if (!isCreate && loading) return <LoadingSpinner fullscreen />;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={20} color={TEXT.secondary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>{isCreate ? 'New meeting' : 'Meeting'}</Text>
-        <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
-          {saving ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Text style={styles.saveBtnText}>Save</Text>}
-        </Pressable>
+        <View style={styles.headerLeft}>
+          <Pressable onPress={() => router.back()} hitSlop={8}>
+            <Ionicons name="arrow-back" size={20} color={TEXT.secondary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{isCreate ? 'New meeting' : 'Meeting'}</Text>
+        </View>
+        <View style={styles.headerRight}>
+          {!isCreate && (
+            <Pressable onPress={handleDeleteMeeting} hitSlop={8} style={styles.headerIconBtn}>
+              <Ionicons name="trash-outline" size={20} color={SEMANTIC.red} />
+            </Pressable>
+          )}
+          <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn}>
+            {saving ? <ActivityIndicator size="small" color={ACCENT.blue} /> : <Text style={styles.saveBtnText}>Save</Text>}
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -190,6 +214,17 @@ export default function MeetingDetailScreen() {
                 }
               }}
             />
+            <Pressable
+              onPress={() => {
+                if (newActionItem.trim()) {
+                  setActionItems((prev) => [...prev, { id: `ai-${Date.now()}`, body: newActionItem.trim(), status: 'pending' }]);
+                  setNewActionItem('');
+                }
+              }}
+              style={styles.addActionBtn}
+            >
+              <Ionicons name="add" size={20} color={ACCENT.blue} />
+            </Pressable>
           </View>
         </View>
       </ScrollView>
@@ -200,7 +235,10 @@ export default function MeetingDetailScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG.bg0 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER.default },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: FontSize.lg, fontFamily: FontFamily.soraSemiBold, color: TEXT.primary },
+  headerIconBtn: { padding: 8 },
   saveBtn: { paddingHorizontal: 12, paddingVertical: 6 },
   saveBtnText: { fontSize: FontSize.md, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
   container: { padding: 16, gap: 20, paddingBottom: 40 },
@@ -220,6 +258,7 @@ const styles = StyleSheet.create({
   actionFooter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pushBtn: { paddingHorizontal: 10, paddingVertical: 4, backgroundColor: ACCENT.blueDim, borderRadius: 6 },
   pushBtnText: { fontSize: FontSize.sm, fontFamily: FontFamily.interSemiBold, color: ACCENT.blue },
-  addActionRow: {},
-  addActionInput: { backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.borderColor, color: TEXT.primary, padding: 12, fontSize: FontSize.md, fontFamily: FontFamily.interRegular },
+  addActionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  addActionInput: { flex: 1, backgroundColor: InputDefaults.backgroundColor, borderRadius: InputDefaults.borderRadius, borderWidth: InputDefaults.borderWidth, borderColor: InputDefaults.borderColor, color: TEXT.primary, padding: 12, fontSize: FontSize.md, fontFamily: FontFamily.interRegular },
+  addActionBtn: { width: 44, height: 44, borderRadius: 8, backgroundColor: ACCENT.blueDim, alignItems: 'center', justifyContent: 'center' },
 });

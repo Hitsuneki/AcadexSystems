@@ -11,9 +11,10 @@ import type { ProjectFile } from '@/types';
 interface FileCardProps {
   file: ProjectFile;
   onPress: () => void;
+  onDelete?: () => void;
 }
 
-export function FileCard({ file, onPress }: FileCardProps) {
+export function FileCard({ file, onPress, onDelete }: FileCardProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -25,7 +26,13 @@ export function FileCard({ file, onPress }: FileCardProps) {
           {formatFileSize(file.fileSize)} · {formatDate(file.uploadedAt)}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={TEXT.muted} />
+      {onDelete ? (
+        <Pressable onPress={onDelete} hitSlop={8} style={{ padding: 4 }}>
+          <Ionicons name="trash-outline" size={16} color={TEXT.muted} />
+        </Pressable>
+      ) : (
+        <Ionicons name="chevron-forward" size={16} color={TEXT.muted} />
+      )}
     </Pressable>
   );
 }
