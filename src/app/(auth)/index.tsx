@@ -1,460 +1,769 @@
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, Text, View, ScrollView, Pressable, useWindowDimensions, Platform } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { DotGrid } from "@/components/DotGrid";
-import { BG, TEXT, ACCENT, BORDER } from "@/constants/colors";
-import { FontFamily, FontSize } from "@/constants/typography";
-import { useAuth } from "@/hooks/use-auth";
-import { isProfileComplete } from "@/utils/profile";
-import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from '@/hooks/use-auth';
+import { isProfileComplete } from '@/utils/profile';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { BG, TEXT, ACCENT, BORDER } from '@/constants/colors';
+import { FontFamily, FontSize } from '@/constants/typography';
 
-// 1. Injected CSS for Animations (Web Only)
-const injectedCSS = `
-:root {
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-sharp: cubic-bezier(0.25, 0, 0, 1);
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ROWS = 4;
+const LIT  = ACCENT.primary;
+const DIM  = '#1A1A1A';
+
+// On web, useNativeDriver is not supported — fall back to JS-based animation
+const ND = Platform.OS !== 'web';
+
+const STATS = [
+  { label: 'ACTIVE USERS',      value: '1,284', unit: 'accounts' },
+  { label: 'PROJECTS CREATED',  value: '8,712',  unit: 'total'    },
+  { label: 'TASKS RESOLVED',    value: '34.2k', unit: 'lifetime'  },
+  { label: 'UPTIME',            value: '99.9',  unit: '%'        },
+];
+
+const MODULES = [
+  { id: '01', label: 'PROJECTS' },
+  { id: '02', label: 'TASKS'    },
+  { id: '03', label: 'FILES'    },
+  { id: '04', label: 'NOTES'    },
+  { id: '05', label: 'UPDATES'  },
+  { id: '06', label: 'TEAM'     },
+];
+
+const FEATURES = [
+  {
+    id: 'F01',
+    icon: 'grid-outline' as const,
+    title: 'PROJECT WORKSPACE',
+    desc: 'Kanban board, file system, notes, and task updates — all under one project context.',
+  },
+  {
+    id: 'F02',
+    icon: 'checkmark-circle-outline' as const,
+    title: 'TASK TRACKING',
+    desc: 'Assign, prioritize, and track tasks with status pipelines and deadline signals.',
+  },
+  {
+    id: 'F03',
+    icon: 'terminal-outline' as const,
+    title: 'TECHNICAL INTERFACE',
+    desc: 'Designed for focus. No noise. No bloat. Every element earns its place on screen.',
+  },
+  {
+    id: 'F04',
+    icon: 'time-outline' as const,
+    title: 'TIMELINE VISIBILITY',
+    desc: 'Activity feeds and update logs give you full visibility into project progress.',
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DotGrid (pattern-shifting)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function randomPattern(rows: number, cols: number): Set<string> {
+  const s = new Set<string>();
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (Math.random() < 0.1) s.add(r + ',' + c);
+  return s;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+function LandingDotGrid({ cols }: { cols: number }) {
+  const anims = useRef<Animated.Value[][]>(
+    Array.from({ length: ROWS }, () =>
+      Array.from({ length: cols }, () => new Animated.Value(0))
+    )
+  ).current;
 
-@keyframes pulse-ring {
-  0%   { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.8); opacity: 0; }
-}
-
-@keyframes text-flicker {
-  0%   { opacity: 1; }
-  5%   { opacity: 0.2; }
-  10%  { opacity: 1; }
-  15%  { opacity: 0.4; }
-  20%  { opacity: 1; }
-  100% { opacity: 1; }
-}
-
-@keyframes fade-slide-up {
-  0% { opacity: 0; transform: translateY(var(--slide-dist, 16px)); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fade-slide-left {
-  0% { opacity: 0; transform: translateX(20px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes fade-slide-right {
-  0% { opacity: 0; transform: translateX(-16px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-[data-class~="anim-nav"] { animation: fade-slide-up 400ms var(--ease-out-expo) both; --slide-dist: -8px; }
-[data-class~="anim-hero-lbl"] { animation: fade-slide-up 350ms var(--ease-out-expo) 100ms both; --slide-dist: 12px; }
-[data-class~="anim-hero-h1"] { animation: fade-slide-up 450ms var(--ease-out-expo) 180ms both; --slide-dist: 16px; }
-[data-class~="anim-hero-h2"] { animation: fade-slide-up 450ms var(--ease-out-expo) 260ms both; --slide-dist: 16px; }
-[data-class~="anim-hero-h3"] { animation: fade-slide-up 500ms var(--ease-out-expo) 340ms both; --slide-dist: 16px; }
-[data-class~="anim-flicker"] { animation: text-flicker 600ms linear 840ms 1 normal both; }
-[data-class~="anim-hero-desc"] { animation: fade-slide-up 400ms var(--ease-out-expo) 440ms both; --slide-dist: 8px; }
-[data-class~="anim-hero-btns"] { animation: fade-slide-up 380ms var(--ease-out-expo) 540ms both; --slide-dist: 8px; }
-[data-class~="anim-hero-dots"] { animation: fade-in 600ms var(--ease-out-expo) 640ms both; }
-
-[data-class~="anim-sys-card"] { animation: fade-slide-left 500ms var(--ease-out-expo) 300ms both; }
-[data-class~="anim-mod-card"] { animation: fade-slide-left 500ms var(--ease-out-expo) 420ms both; }
-
-/* Dynamic delays for SYS.READOUT rows (1-4) */
-[data-class~="anim-sys-row-1"] { animation: fade-in 200ms ease 360ms both; }
-[data-class~="anim-sys-row-2"] { animation: fade-in 200ms ease 420ms both; }
-[data-class~="anim-sys-row-3"] { animation: fade-in 200ms ease 480ms both; }
-[data-class~="anim-sys-row-4"] { animation: fade-in 200ms ease 540ms both; }
-
-[data-class~="anim-ready"] { opacity: 0; }
-[data-class~="anim-in-hdr"] { animation: fade-slide-up 400ms var(--ease-out-expo) forwards; --slide-dist: 12px; }
-[data-class~="anim-in-card"] { animation: fade-slide-up 450ms var(--ease-out-expo) forwards; --slide-dist: 16px; }
-[data-class~="anim-in-boot-txt"] { animation: fade-slide-right 450ms var(--ease-out-expo) forwards; }
-[data-class~="anim-in-boot-btn"] { animation: fade-slide-up 350ms var(--ease-out-expo) 120ms forwards; --slide-dist: 8px; }
-
-.status-dot-pulse { position: relative; }
-.status-dot-pulse::after {
-  content: ""; position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  border-radius: 50%;
-  background-color: inherit;
-  animation: pulse-ring 2s infinite var(--ease-out-expo);
-}
-.mod-dot::after { animation-duration: 1.8s; }
-
-.btn-primary { transition: filter 180ms ease, transform 180ms ease; }
-.btn-primary:hover { filter: brightness(1.1); transform: translateY(-2px); }
-.btn-primary:active { transform: translateY(0) scale(0.98); transition-duration: 80ms; }
-
-.btn-secondary { transition: background-color 180ms ease, border-color 180ms ease; }
-.btn-secondary:hover { background-color: rgba(255,255,255,0.1); border-color: #ffffff; }
-
-.module-row { transition: transform 150ms ease; }
-.module-row:hover { transform: translateX(4px); }
-
-.feature-card { transition: border-color 200ms ease, transform 200ms ease; }
-.feature-card:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-3px); }
-`;
-
-// Helper: Custom hook for scroll-triggered anims on Web
-const useScrollAnim = (threshold = 0.15) => {
-  const [inView, setInView] = useState(false);
-  const ref = useRef<any>(null);
-
-  useEffect(() => {
-    if (Platform.OS !== "web" || !ref.current) {
-      setInView(true); // Auto-enable on mobile/native
-      return;
+  function applyPattern(pattern: Set<string>) {
+    const animations: Animated.CompositeAnimation[] = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < cols; c++) {
+        animations.push(
+          Animated.timing(anims[r][c], {
+            toValue: pattern.has(r + ',' + c) ? 1 : 0,
+            duration: 500 + Math.random() * 500,
+            delay: Math.random() * 400,
+            useNativeDriver: false,
+          })
+        );
+      }
     }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold }
-    );
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return { ref, inView };
-};
-
-// Helper: Animated Number Counter
-const AnimatedNumber = ({ from, to, duration, decimals = 0, delay = 0 }: { from: number, to: number, duration: number, decimals?: number, delay?: number }) => {
-  const [val, setVal] = useState(from);
-  
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const start = performance.now();
-      const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
-      const tick = (now: number) => {
-        const t = Math.min((now - start) / duration, 1);
-        setVal(from + (to - from) * easeOut(t));
-        if (t < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    }, delay);
-    return () => clearTimeout(timeout);
-  }, [from, to, duration, delay]);
-
-  return <Text>{decimals > 0 ? val.toFixed(decimals) : Math.round(val).toLocaleString()}</Text>;
-};
-
-
-const formatUTC = (date: Date) => date.toISOString().replace("T", " ").substring(0, 19) + " UTC";
-
-export default function LandingScreen() {
-  const { user, profile, loading } = useAuth();
-  const router = useRouter();
-  const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  
-  const [time, setTime] = useState(new Date());
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const isMobile = width < 768;
-
-  const handleCTA = () => {
-    if (user) {
-      if (isProfileComplete(profile)) router.push("/(main)");
-      else router.push("/(auth)/complete-profile");
-    } else {
-      router.push("/(auth)/login");
-    }
-  };
-
-  const handleRegister = () => {
-    if (user) handleCTA();
-    else router.push("/(auth)/register");
-  };
-
-  const onScroll = (e: any) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const progress = Math.min(100, Math.max(0, (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100));
-    setScrollProgress(progress);
-  };
-
-  // Scroll triggers
-  const manifestAnim = useScrollAnim(0.2);
-  const bootAnim = useScrollAnim(0.5);
-
-  if (loading) {
-    return <LoadingSpinner fullscreen />;
+    Animated.parallel(animations).start();
   }
 
+  useEffect(() => {
+    applyPattern(randomPattern(ROWS, cols));
+    const id = setInterval(() => applyPattern(randomPattern(ROWS, cols)), 3000);
+    return () => clearInterval(id);
+  }, [cols]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      {Platform.OS === "web" && <style>{injectedCSS}</style>}
-      
-      {/* Scroll Progress Indicator */}
-      <View style={[styles.scrollIndicator, { width: `${scrollProgress}%` }]} />
-
-      {/* NAVBAR */}
-      <View data-class="anim-nav" style={[styles.navbar, { paddingTop: Platform.OS === "web" ? 16 : Math.max(insets.top, 16) }]}>
-        <View style={styles.navLeft}>
-          <Text style={styles.navBrand}>ACADEX</Text>
-          <View style={styles.navVersion}><Text style={styles.navVersionText}>v1.0.0</Text></View>
-          <View style={styles.navStatus}>
-            <View style={[styles.statusDot]} data-class="status-dot-pulse" />
-            <Text style={styles.navStatusText}>SYS:ONLINE</Text>
-          </View>
+    <View style={s.dotGrid}>
+      {Array.from({ length: ROWS }, (_, r) => (
+        <View key={r} style={s.dotRow}>
+          {Array.from({ length: cols }, (_, c) => {
+            const bg = anims[r][c].interpolate({
+              inputRange: [0, 1],
+              outputRange: [DIM, LIT],
+            });
+            return <Animated.View key={c} style={[s.dot, { backgroundColor: bg as any }]} />;
+          })}
         </View>
-        
-        <View style={styles.navRight}>
-          {!isMobile && <Text style={styles.navTime}>{formatUTC(time)}</Text>}
-          <Pressable data-class="btn-secondary" style={styles.navBtnOutline} onPress={handleCTA}>
-            <Text style={styles.navBtnOutlineText}>LOGIN</Text>
-          </Pressable>
-          <Pressable data-class="btn-primary" style={styles.navBtnSolid} onPress={handleRegister}>
-            <Text style={styles.navBtnSolidText}>REGISTER</Text>
-          </Pressable>
+      ))}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BlinkingCursor
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BlinkingCursor() {
+  const opacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: ND }),
+        Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: ND }),
+      ])
+    ).start();
+  }, []);
+  return <Animated.Text style={[s.cursorText, { opacity }]}>_</Animated.Text>;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SystemClock
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SystemClock({ style }: { style?: any }) {
+  const [time, setTime] = useState('');
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const d = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+      setTime(d);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <Text style={[s.sysBarTime, style]}>{time}</Text>;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function LandingScreen() {
+  const router   = useRouter();
+  const { user, profile, loading } = useAuth();
+  const insets   = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 900;
+  const cols = isDesktop ? 38 : Math.floor(width / 11);
+
+  // Entry animations
+  const heroOpacity = useRef(new Animated.Value(0)).current;
+  const heroY       = useRef(new Animated.Value(20)).current;
+  const gridOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.stagger(100, [
+      Animated.parallel([
+        Animated.timing(heroOpacity, { toValue: 1, duration: 500, delay: 0, useNativeDriver: ND }),
+        Animated.timing(heroY,       { toValue: 0, duration: 500, delay: 0, useNativeDriver: ND }),
+      ]),
+      Animated.timing(gridOpacity, { toValue: 0.6, duration: 700, delay: 0, useNativeDriver: ND }),
+    ]).start();
+  }, []);
+
+  const goLogin    = () => router.push('/(auth)/login');
+  const goRegister = () => {
+    if (user) {
+      if (isProfileComplete(profile)) router.push('/(main)');
+      else router.push('/(auth)/complete-profile');
+    } else {
+      router.push('/(auth)/register');
+    }
+  };
+
+  if (loading) return <LoadingSpinner fullscreen />;
+
+  return (
+    <View style={[s.root, { paddingTop: insets.top }]}>
+
+      {/* ── NAVBAR ─────────────────────────────────────── */}
+      <View style={s.navbar}>
+        <View style={s.navLeft}>
+          <Text style={s.navBrand}>ACADEX</Text>
+          <Text style={s.navMeta}>v1.0.0</Text>
+          <View style={s.onlineDot} />
+          <Text style={s.navMeta}>SYS.ONLINE</Text>
+        </View>
+        <View style={s.navRight}>
+          {isDesktop && <SystemClock />}
+          <TouchableOpacity style={s.navLoginBtn} onPress={goLogin} activeOpacity={0.8}>
+            <Text style={s.navLoginText}>LOGIN</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.navRegisterBtn} onPress={goRegister} activeOpacity={0.8}>
+            <Text style={s.navRegisterText}>REGISTER</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-      >
-        {/* HERO SECTION */}
-        <View style={[styles.hero, isMobile && styles.heroMobile]}>
-          <View style={[styles.heroLeft, isMobile && { width: "100%", paddingRight: 0 }]}>
-            <Text data-class="anim-hero-lbl" style={styles.sectionLabel}>// ACADEMIC.WORKSPACE.SYSTEM</Text>
-            <View style={styles.heroTitles}>
-              <Text data-class="anim-hero-h1" style={styles.heroTitle}>ORCHESTRATE</Text>
-              <Text data-class="anim-hero-h2" style={styles.heroTitle}>YOUR ACADEMIC</Text>
-              <View data-class="anim-hero-h3">
-                 <Text data-class="anim-flicker" style={[styles.heroTitle, { color: ACCENT.primary }]}>LIFECYCLE</Text>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+
+        {/* ── HERO ───────────────────────────────────────── */}
+        <View style={[s.heroSection, isDesktop && s.heroSectionDesktop]}>
+
+          {/* Hero Left */}
+          <Animated.View
+            style={[
+              s.heroLeft,
+              isDesktop && s.heroLeftDesktop,
+              { opacity: heroOpacity, transform: [{ translateY: heroY }] },
+            ]}
+          >
+            <Text style={s.heroLabel}>// ACADEMIC WORKSPACE SYSTEM</Text>
+
+            <View style={s.headlineBlock}>
+              {['ORGANIZE.', 'TRACK.'].map((word, i) => (
+                <Text key={i} style={s.headlineWhite}>{word}</Text>
+              ))}
+              <View style={s.headlineRow}>
+                <Text style={s.headlineGreen}>SHIP.</Text>
+                <BlinkingCursor />
               </View>
             </View>
-            <Text data-class="anim-hero-desc" style={styles.heroDesc}>
-              A unified terminal for task tracking, resource management, and collaborative execution. Built for raw efficiency. No distractions, just data.
+
+            <Text style={s.subtitle}>
+              A technical workspace for students who treat their academics
+              like a production system. Projects, tasks, files, and team
+              updates — all in one disciplined interface.
             </Text>
-            
-            <View data-class="anim-hero-btns" style={styles.heroActions}>
-              <Pressable data-class="btn-primary" style={styles.btnPrimary} onPress={handleRegister}>
-                <Text style={styles.btnPrimaryText}>INIT WORKSPACE →</Text>
-              </Pressable>
-              <Pressable data-class="btn-secondary" style={styles.btnSecondary} onPress={handleCTA}>
-                <Text style={styles.btnSecondaryText}>AUTHENTICATE</Text>
-              </Pressable>
+
+            <View style={s.ctaRow}>
+              <TouchableOpacity style={s.ctaPrimary} onPress={goRegister} activeOpacity={0.85}>
+                <Text style={s.ctaPrimaryText}>INIT WORKSPACE  →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.ctaGhost} onPress={goLogin} activeOpacity={0.8}>
+                <Text style={s.ctaGhostText}>AUTHENTICATE</Text>
+              </TouchableOpacity>
             </View>
 
-            {!isMobile && (
-              <View data-class="anim-hero-dots">
-                <DotGrid rows={3} cols={20} />
-              </View>
-            )}
-          </View>
+            {/* DotGrid */}
+            <Animated.View style={[s.gridWrap, { opacity: gridOpacity }]}>
+              <LandingDotGrid cols={cols} />
+            </Animated.View>
+          </Animated.View>
 
-          <View style={[styles.heroRight, isMobile && { width: "100%", marginTop: 32 }]}>
-            {/* SYS.READOUT */}
-            <View data-class="anim-sys-card" style={styles.widgetCard}>
-              <Text style={styles.widgetHeader}>// SYS.READOUT</Text>
-              <View style={styles.statsGrid}>
-                {[
-                  { label: "ACTIVE.USERS", value: 12491, delay: 360 },
-                  { label: "PROJECTS.LOGGED", value: 8902, delay: 420 },
-                  { label: "TASKS.RESOLVED", value: 45200, suffix: "+", delay: 480 },
-                  { label: "SYS.UPTIME", value: 99.99, decimals: 2, suffix: "%", delay: 540 },
-                ].map((stat, i) => (
-                  <View key={i} data-class={`anim-sys-row-${i+1}`} style={styles.statRow}>
-                    <Text style={styles.statLabel}>{stat.label}</Text>
-                    <Text style={styles.statValue}>
-                      <AnimatedNumber from={0} to={stat.value} duration={800} decimals={stat.decimals} delay={stat.delay} />
-                      {stat.suffix && <Text style={{ fontSize: 14 }}>{stat.suffix}</Text>}
-                    </Text>
+          {/* Hero Right — Stats Panel (desktop only) */}
+          {isDesktop && (
+            <View style={s.statsPanel}>
+              {/* SYS.READOUT header */}
+              <View style={s.statsPanelHeader}>
+                <Text style={s.statsPanelTitle}>SYS.READOUT</Text>
+                <View style={s.onlineDot} />
+              </View>
+
+              {/* Stats rows */}
+              {STATS.map((stat, i) => (
+                <View key={i} style={s.statRow}>
+                  <Text style={s.statLabel}>{stat.label}</Text>
+                  <View style={s.statValueWrap}>
+                    <Text style={s.statValue}>{stat.value}</Text>
+                    <Text style={s.statUnit}>{stat.unit}</Text>
                   </View>
-                ))}
-              </View>
-            </View>
+                </View>
+              ))}
 
-            {/* MODULE.INDEX */}
-            <View data-class="anim-mod-card" style={styles.widgetCard}>
-              <Text style={styles.widgetHeader}>// MODULE.INDEX</Text>
-              <View style={styles.moduleList}>
-                {["TASK_ENGINE", "PROJECT_HUB", "CLOUD_STORAGE", "SYNC_PROTOCOL"].map((mod, idx) => (
-                  <View key={idx} data-class="module-row" style={styles.moduleRow}>
-                    <Text style={styles.moduleNum}>0{idx + 1}.</Text>
-                    <Text style={styles.moduleName}>{mod}</Text>
-                    {/* Staggered pulse rings */}
-                    <View data-class="status-dot-pulse mod-dot" style={[styles.moduleActive, Platform.OS === 'web' && { animationDelay: `${idx * 200}ms` } as any]} />
-                  </View>
-                ))}
+              {/* MODULE INDEX */}
+              <View style={[s.statsPanelHeader, { marginTop: 20 }]}>
+                <Text style={s.statsPanelTitle}>MODULE INDEX</Text>
               </View>
+              {MODULES.map((mod) => (
+                <View key={mod.id} style={s.moduleRow}>
+                  <Text style={s.moduleId}>{mod.id}</Text>
+                  <Text style={s.moduleLabel}>{mod.label}</Text>
+                  <View style={s.moduleDot} />
+                </View>
+              ))}
             </View>
-          </View>
+          )}
         </View>
 
-        {/* CAPABILITY MANIFEST */}
-        <View ref={manifestAnim.ref} style={styles.manifestSection}>
-          <View data-class={manifestAnim.inView ? "anim-in-hdr" : "anim-ready"} style={styles.manifestHeader}>
-            <Text style={styles.sectionLabel}>// CAPABILITY.MANIFEST</Text>
-            <Text style={styles.sectionLabel}>[04 MODULES]</Text>
-          </View>
-          
-          <View style={[styles.featuresGrid, isMobile && { flexDirection: "column" }]}>
-            {[
-              { id: "F01", name: "TASK TRACKING", desc: "Minimalist task boards to track assignments, deadlines, and milestones.", icon: "list" },
-              { id: "F02", name: "CLOUD STORAGE", desc: "Unified file system for your research, docs, and reference materials.", icon: "cloud" },
-              { id: "F03", name: "TEAM SYNC", desc: "Real-time collaboration modules with built-in role assignments.", icon: "people" },
-              { id: "F04", name: "TERMINAL UX", desc: "Keyboard-first efficiency with zero visual clutter.", icon: "terminal" },
-            ].map((feat, idx) => (
-              <View 
-                key={idx} 
-                data-class={manifestAnim.inView ? "anim-in-card feature-card" : "anim-ready"}
-                style={[
-                  styles.featureCard, 
-                  isMobile ? { width: "100%" } : { width: "48%" },
-                  Platform.OS === 'web' && manifestAnim.inView && { animationDelay: `${idx * 80}ms` } as any
-                ]}
-              >
-                <Ionicons name={feat.icon as any} size={24} color={ACCENT.primary} style={{ marginBottom: 12 }} />
-                <Text style={styles.featureName}>{feat.id} {feat.name}</Text>
-                <Text style={styles.featureDesc}>{feat.desc}</Text>
+        {/* Mobile stats strip */}
+        {!isDesktop && (
+          <View style={s.mobileStatsStrip}>
+            {STATS.map((stat, i) => (
+              <View key={i} style={[s.mobileStatItem, i < STATS.length - 1 && s.mobileStatBorder]}>
+                <Text style={s.statValue}>{stat.value}</Text>
+                <Text style={s.mobileStatLabel}>{stat.label}</Text>
               </View>
             ))}
           </View>
-        </View>
+        )}
 
-        {/* BOOT SEQUENCE */}
-        <View ref={bootAnim.ref} style={styles.bootSection}>
-          <View style={[styles.bootContent, isMobile && { flexDirection: "column", alignItems: "flex-start", gap: 24 }]}>
-            <View data-class={bootAnim.inView ? "anim-in-boot-txt" : "anim-ready"} style={styles.bootTextWrap}>
-              <Text style={styles.sectionLabel}>// INIT.SEQUENCE</Text>
-              <Text style={styles.bootTitle}>Ready to boot up?</Text>
-              <Text style={styles.bootDesc}>Initialize your workspace and regain control over your academic workflow.</Text>
-            </View>
-            <View data-class={bootAnim.inView ? "anim-in-boot-btn" : "anim-ready"} style={[styles.bootActions, isMobile && { width: "100%", alignItems: "stretch" }]}>
-              <Pressable data-class="btn-primary" style={styles.btnPrimary} onPress={handleRegister}>
-                <Text style={styles.btnPrimaryText}>CREATE ACCOUNT →</Text>
-              </Pressable>
-              <Pressable data-class="btn-secondary" style={styles.btnGhost} onPress={handleCTA}>
-                <Text style={styles.btnGhostText}>SIGN IN INSTEAD</Text>
-              </Pressable>
-            </View>
+        {/* ── CAPABILITY MANIFEST ────────────────────────── */}
+        <View style={s.manifestSection}>
+          <View style={s.manifestHeader}>
+            <Text style={s.manifestLabel}>// CAPABILITY.MANIFEST</Text>
+            <Text style={s.manifestCount}>04 MODULES</Text>
+          </View>
+          <View style={s.featuresGrid}>
+            {isDesktop ? (
+              // Desktop: explicit 2-column row pairs
+              [[0, 1], [2, 3]].map((pair, rowIdx) => (
+                <View key={rowIdx} style={s.featureRow2Col}>
+                  {pair.map(idx => {
+                    const f = FEATURES[idx];
+                    return (
+                      <View key={f.id} style={s.featureCard2Col}>
+                        <View style={s.featureTop}>
+                          <Text style={s.featureId}>{f.id}</Text>
+                          <Ionicons name={f.icon} size={16} color={ACCENT.primary} />
+                        </View>
+                        <Text style={s.featureTitle}>{f.title}</Text>
+                        <Text style={s.featureDesc}>{f.desc}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))
+            ) : (
+              FEATURES.map((f) => (
+                <View key={f.id} style={s.featureCard}>
+                  <View style={s.featureTop}>
+                    <Text style={s.featureId}>{f.id}</Text>
+                    <Ionicons name={f.icon} size={16} color={ACCENT.primary} />
+                  </View>
+                  <Text style={s.featureTitle}>{f.title}</Text>
+                  <Text style={s.featureDesc}>{f.desc}</Text>
+                </View>
+              ))
+            )}
           </View>
         </View>
 
-        {/* FOOTER */}
-        <View style={styles.footer}>
-          <Text style={styles.footerBrand}>ACADEX</Text>
-          <Text style={styles.footerText}>© 2026 / BUILD 1.0.0</Text>
-          {!isMobile && <Text style={styles.footerTime}>{formatUTC(time)}</Text>}
+        {/* ── FOOTER CTA ─────────────────────────────────── */}
+        <View style={[s.footerCTA, isDesktop && s.footerCTADesktop]}>
+          <View style={s.footerCTALeft}>
+            <Text style={s.footerCTALabel}>// INIT SEQUENCE</Text>
+            <Text style={s.footerCTAHeading}>Ready to boot up?</Text>
+            <Text style={s.footerCTASub}>
+              Free to use. No credit card required. Set up your first{'\n'}
+              project workspace in under 60 seconds.
+            </Text>
+          </View>
+          <View style={[s.footerCTAButtons, isDesktop && s.footerCTAButtonsDesktop]}>
+            <TouchableOpacity style={s.ctaPrimary} onPress={goRegister} activeOpacity={0.85}>
+              <Text style={s.ctaPrimaryText}>CREATE ACCOUNT  →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.ctaGhost} onPress={goLogin} activeOpacity={0.8}>
+              <Text style={s.ctaGhostText}>SIGN IN INSTEAD</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* ── FOOTER ─────────────────────────────────────── */}
+        <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+          <Text style={s.footerBrand}>ACADEX</Text>
+          <Text style={s.footerCopy}>© {new Date().getFullYear()}</Text>
+          <Text style={s.footerCopy}>BUILD.1.0.0.STABLE</Text>
+          <SystemClock style={s.footerCopy} />
+        </View>
+
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG.base },
-  scrollContent: { flexGrow: 1, paddingBottom: 40 },
-  scrollIndicator: {
-    position: 'absolute',
-    top: 0, left: 0, height: 1,
-    backgroundColor: ACCENT.primary,
-    zIndex: 100,
-  },
-  
-  // NAVBAR
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: BG.base },
+
+  // ── Navbar
   navbar: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 24, paddingBottom: 16, borderBottomWidth: 1,
-    borderBottomColor: BORDER.dim, backgroundColor: BG.base, zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    height: 44,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
   },
-  navLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  navBrand: { fontFamily: FontFamily.soraBold, fontSize: FontSize.lg, color: TEXT.primary },
-  navVersion: { borderWidth: 1, borderColor: BORDER.dim, paddingHorizontal: 6, paddingVertical: 2 },
-  navVersionText: { fontFamily: FontFamily.monoMedium, fontSize: 10, color: TEXT.muted },
-  navStatus: { flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 8 },
-  statusDot: { width: 8, height: 8, backgroundColor: ACCENT.primary, borderRadius: 4 },
-  navStatusText: { fontFamily: FontFamily.monoMedium, fontSize: 10, color: ACCENT.primary },
-  
-  navRight: { flexDirection: "row", alignItems: "center", gap: 16 },
-  navTime: { fontFamily: FontFamily.monoMedium, fontSize: 12, color: TEXT.muted },
-  navBtnOutline: { borderWidth: 1, borderColor: ACCENT.primary, paddingHorizontal: 12, paddingVertical: 6 },
-  navBtnOutlineText: { fontFamily: FontFamily.monoMedium, fontSize: 11, color: ACCENT.primary },
-  navBtnSolid: { backgroundColor: ACCENT.primary, paddingHorizontal: 12, paddingVertical: 6 },
-  navBtnSolidText: { fontFamily: FontFamily.monoMedium, fontSize: 11, color: BG.base },
+  navLeft:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  navRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  navBrand: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 12,
+    color: TEXT.t0,
+    letterSpacing: 3,
+  },
+  navMeta: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 10,
+    color: TEXT.t2,
+    letterSpacing: 1,
+  },
+  onlineDot: { width: 5, height: 5, backgroundColor: ACCENT.primary },
+  navLoginBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+  },
+  navLoginText: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 10,
+    color: TEXT.t2,
+    letterSpacing: 1,
+  },
+  navRegisterBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: ACCENT.primary,
+  },
+  navRegisterText: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 10,
+    color: '#000000',
+    letterSpacing: 1,
+  },
+  sysBarTime: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 10,
+    color: TEXT.t2,
+    letterSpacing: 1,
+  },
 
-  // HERO
-  hero: { flexDirection: "row", padding: 40, gap: 40, alignItems: "flex-start" },
-  heroMobile: { flexDirection: "column", padding: 24 },
-  heroLeft: { width: "55%", paddingRight: 40 },
-  heroRight: { width: "45%", gap: 24 },
-  sectionLabel: { fontFamily: FontFamily.monoMedium, fontSize: 12, color: TEXT.muted, letterSpacing: 1.5, marginBottom: 16 },
-  heroTitles: { marginBottom: 24 },
-  heroTitle: { fontFamily: FontFamily.soraBold, fontSize: FontSize["4xl"], color: TEXT.primary, letterSpacing: -1, lineHeight: 48 },
-  heroDesc: { fontFamily: FontFamily.interRegular, fontSize: FontSize.md, color: TEXT.muted, lineHeight: 24, marginBottom: 32, maxWidth: "90%" },
-  heroActions: { flexDirection: "row", gap: 16, marginBottom: 48, flexWrap: "wrap" },
-  btnPrimary: { backgroundColor: ACCENT.primary, paddingHorizontal: 24, paddingVertical: 14 },
-  btnPrimaryText: { fontFamily: FontFamily.monoBold, fontSize: FontSize.sm, color: BG.base },
-  btnSecondary: { borderWidth: 1, borderColor: BORDER.primary, paddingHorizontal: 24, paddingVertical: 14 },
-  btnSecondaryText: { fontFamily: FontFamily.monoBold, fontSize: FontSize.sm, color: TEXT.primary },
+  // ── Hero
+  heroSection: {
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  heroSectionDesktop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 32,
+  },
+  heroLeft: { flex: 1 },
+  heroLeftDesktop: { maxWidth: 480 },
 
-  dotGrid: { flexDirection: "row", flexWrap: "wrap", width: 200, gap: 8, opacity: 0.6 },
-  dot: { width: 3, height: 3, backgroundColor: TEXT.muted },
+  heroLabel: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 10,
+    color: TEXT.t2,
+    letterSpacing: 2,
+    marginBottom: 24,
+  },
+  headlineBlock: { marginBottom: 24 },
+  headlineRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  headlineWhite: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 56,
+    lineHeight: 64,
+    color: TEXT.t0,
+  },
+  headlineGreen: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 56,
+    lineHeight: 64,
+    color: ACCENT.primary,
+  },
+  cursorText: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 56,
+    lineHeight: 64,
+    color: ACCENT.primary,
+  },
+  subtitle: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 13,
+    color: TEXT.t2,
+    lineHeight: 21,
+    marginBottom: 28,
+    maxWidth: 420,
+  },
+  ctaRow: { flexDirection: 'row', gap: 10, marginBottom: 32 },
+  ctaPrimary: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: ACCENT.primary,
+  },
+  ctaPrimaryText: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 11,
+    color: '#000000',
+    letterSpacing: 1,
+  },
+  ctaGhost: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+  },
+  ctaGhostText: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 11,
+    color: TEXT.t2,
+    letterSpacing: 1,
+  },
+  gridWrap: { marginTop: 8 },
 
-  // WIDGETS
-  widgetCard: { backgroundColor: BG.bg1, borderWidth: 1, borderColor: BORDER.dim, padding: 24 },
-  widgetHeader: { fontFamily: FontFamily.monoMedium, fontSize: 11, color: TEXT.muted, marginBottom: 16 },
-  statsGrid: { gap: 12 },
-  statRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: BORDER.dim, paddingBottom: 8 },
-  statLabel: { fontFamily: FontFamily.monoMedium, fontSize: 12, color: TEXT.t0 },
-  statValue: { fontFamily: FontFamily.monoBold, fontSize: FontSize.lg, color: TEXT.primary },
+  // ── Stats Panel (desktop right side)
+  statsPanel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+    padding: 16,
+    maxWidth: 320,
+    alignSelf: 'flex-start',
+  },
+  statsPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  statsPanelTitle: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 9,
+    color: TEXT.t3,
+    letterSpacing: 2,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  statLabel: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 9,
+    color: TEXT.t2,
+    letterSpacing: 1,
+  },
+  statValueWrap: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  statValue: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 18,
+    color: TEXT.t0,
+  },
+  statUnit: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 8,
+    color: TEXT.t3,
+    letterSpacing: 1,
+  },
+  moduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+    gap: 10,
+  },
+  moduleId: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 8,
+    color: TEXT.t3,
+    letterSpacing: 1,
+    width: 18,
+  },
+  moduleLabel: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 10,
+    color: TEXT.t1,
+    letterSpacing: 1,
+    flex: 1,
+  },
+  moduleDot: { width: 4, height: 4, backgroundColor: ACCENT.primary },
 
-  moduleList: { gap: 12 },
-  moduleRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: BG.bg0, padding: 12, borderWidth: 1, borderColor: BORDER.dim },
-  moduleNum: { fontFamily: FontFamily.monoMedium, fontSize: 12, color: TEXT.muted },
-  moduleName: { fontFamily: FontFamily.monoMedium, fontSize: 13, color: TEXT.primary, flex: 1 },
-  moduleActive: { width: 8, height: 8, backgroundColor: ACCENT.primary, borderRadius: 4 },
+  // ── Mobile stats strip
+  mobileStatsStrip: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  mobileStatItem: {
+    flex: 1,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  mobileStatBorder: { borderRightWidth: 1, borderRightColor: '#1A1A1A' },
+  mobileStatLabel: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 7,
+    color: TEXT.t3,
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginTop: 4,
+  },
 
-  // MANIFEST
-  manifestSection: { padding: 40, paddingTop: 0 },
-  manifestHeader: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: BORDER.dim, paddingBottom: 16, marginBottom: 24 },
-  featuresGrid: { flexDirection: "row", flexWrap: "wrap", gap: 16, justifyContent: "space-between" },
-  featureCard: { backgroundColor: BG.bg1, borderWidth: 1, borderColor: BORDER.dim, padding: 24, marginBottom: 16 },
-  featureName: { fontFamily: FontFamily.monoBold, fontSize: FontSize.base, color: TEXT.primary, marginBottom: 8 },
-  featureDesc: { fontFamily: FontFamily.interRegular, fontSize: FontSize.sm, color: TEXT.muted, lineHeight: 20 },
+  // ── Capability Manifest
+  manifestSection: {
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  manifestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  manifestLabel: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 10,
+    color: TEXT.t2,
+    letterSpacing: 2,
+  },
+  manifestCount: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 9,
+    color: TEXT.t3,
+    letterSpacing: 1,
+  },
+  featuresGrid: { gap: 1 },
+  // 2-col desktop row
+  featureRow2Col: {
+    flexDirection: 'row',
+    gap: 1,
+    marginBottom: 1,
+  },
+  featureCard2Col: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+    padding: 20,
+  },
+  featureCard: {
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+    padding: 20,
+    marginBottom: 1,
+  },
+  featureTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  featureId: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 9,
+    color: TEXT.t3,
+    letterSpacing: 1,
+  },
+  featureTitle: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 11,
+    color: TEXT.t0,
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  featureDesc: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 12,
+    color: TEXT.t2,
+    lineHeight: 19,
+  },
 
-  // BOOT SEQUENCE
-  bootSection: { paddingHorizontal: 40, marginBottom: 40 },
-  bootContent: { backgroundColor: BG.bg1, borderWidth: 1, borderColor: ACCENT.dim, padding: 32, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  bootTextWrap: { flex: 1, paddingRight: 32 },
-  bootTitle: { fontFamily: FontFamily.soraBold, fontSize: FontSize["2xl"], color: TEXT.primary, marginBottom: 8 },
-  bootDesc: { fontFamily: FontFamily.interRegular, fontSize: FontSize.base, color: TEXT.muted },
-  bootActions: { alignItems: "center", gap: 16 },
-  btnGhost: { padding: 12, borderWidth: 1, borderColor: 'transparent' },
-  btnGhostText: { fontFamily: FontFamily.monoMedium, fontSize: FontSize.sm, color: TEXT.muted },
+  // ── Footer CTA
+  footerCTA: {
+    paddingHorizontal: 24,
+    paddingVertical: 56,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+    gap: 32,
+  },
+  footerCTADesktop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  footerCTALeft: { flex: 1 },
+  footerCTALabel: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 9,
+    color: TEXT.t3,
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  footerCTAHeading: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 36,
+    color: TEXT.t0,
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  footerCTASub: {
+    fontFamily: FontFamily.interRegular,
+    fontSize: 13,
+    color: TEXT.t2,
+    lineHeight: 21,
+  },
+  footerCTAButtons: { gap: 10 },
+  footerCTAButtonsDesktop: { minWidth: 240 },
 
-  // FOOTER
-  footer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 40, paddingVertical: 24, borderTopWidth: 1, borderTopColor: BORDER.dim },
-  footerBrand: { fontFamily: FontFamily.soraBold, fontSize: FontSize.sm, color: TEXT.muted },
-  footerText: { fontFamily: FontFamily.monoMedium, fontSize: 11, color: TEXT.muted },
-  footerTime: { fontFamily: FontFamily.monoMedium, fontSize: 11, color: TEXT.muted },
+  // ── Footer
+  footer: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  footerBrand: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 11,
+    color: TEXT.t3,
+    letterSpacing: 3,
+  },
+  footerCopy: {
+    fontFamily: FontFamily.monoRegular,
+    fontSize: 9,
+    color: TEXT.t3,
+    letterSpacing: 1,
+  },
+
+  // ── DotGrid
+  dotGrid: {},
+  dotRow: { flexDirection: 'row', gap: 5, marginBottom: 5 },
+  dot: { width: 3, height: 3 },
 });
