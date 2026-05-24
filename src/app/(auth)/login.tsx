@@ -9,7 +9,6 @@ import { BG, BORDER, TEXT, ACCENT } from '@/constants/colors';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { validateEmail, validateRequired } from '@/utils/validation';
 import { loginUser } from '@/services/auth.service';
-import { useAuthStore } from '@/stores/auth.store';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
@@ -20,8 +19,6 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [time, setTime] = useState('');
-
-  const { setUser } = useAuthStore();
 
   useEffect(() => {
     const updateTime = () => {
@@ -44,7 +41,6 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await loginUser({ email: email.trim(), password });
-      setUser({ uid: 'stub-uid', email: email.trim() });
     } catch (err: any) {
       Toast.show({ type: 'error', text1: 'AUTH FAILED', text2: err?.message });
     } finally {
